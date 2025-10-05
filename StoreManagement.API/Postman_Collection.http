@@ -1,0 +1,43 @@
+### Store Management API - Postman Collection
+
+### 1. Login as Admin User
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### 2. Login as Staff User
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "staff",
+  "password": "staff123"
+}
+
+### 3. Login with Invalid Credentials
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "invalid",
+  "password": "wrong"
+}
+
+### 4. Login with Invalid Request Format
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "ab",
+  "password": "123"
+}
+
+
+### Variables for Postman Environment
+# Set these in your Postman environment:
+# host = https://localhost:7001 (or your actual API URL)
+# token = (copy the token from login response and paste here)
