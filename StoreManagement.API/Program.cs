@@ -15,10 +15,9 @@ using StoreManagement.Domain.Interfaces;
 using StoreManagement.Infrastructure.Repositories;
 using StoreManagement.Infrastructure.Extensions;
 using StoreManagement.Application.Common.Interfaces;
-using AutoMapper;
 using StoreManagement.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
-
+using StoreManagement.Domain.Entities;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -32,6 +31,12 @@ builder.Services.AddFluentValidationClientsideAdapters();
 builder.Services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateUserRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<UpdateUserRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateProductRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateProductRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateCategoryRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateCategoryRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateSupplierRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateSupplierRequestValidator>();
 
 // Add DbContext with connection string from appsettings
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -89,11 +94,20 @@ builder.Services.AddScoped<IJwtService, JwtService>(provider =>
 builder.Services.AddInfrastructure(builder.Configuration);
 
 // Add AutoMapper
-builder.Services.AddAutoMapper(typeof(StoreManagement.Application.Mappings.UserMappingProfile));
+builder.Services.AddAutoMapper(
+    typeof(StoreManagement.Application.Mappings.UserMappingProfile),
+    typeof(StoreManagement.Application.Mappings.ProductMappingProfile),
+    typeof(StoreManagement.Application.Mappings.CategoryMappingProfile),
+    typeof(StoreManagement.Application.Mappings.SupplierMappingProfile));
 
 // Register Application services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<ISupplierService, SupplierService>();
+builder.Services.AddScoped<IRepository<Category>, BaseRepository<Category>>();
+builder.Services.AddScoped<IRepository<Supplier>, BaseRepository<Supplier>>();
 
 var app = builder.Build();
 

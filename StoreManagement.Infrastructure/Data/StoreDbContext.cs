@@ -30,26 +30,105 @@ public class StoreDbContext : DbContext
         {
             entity.ToTable("users");
             entity.Property(e => e.UserId).HasColumnName("user_id");
-            entity.Property(e => e.Username).HasColumnName("username");
-            entity.Property(e => e.Password).HasColumnName("password");
+            entity.Property(e => e.Username).HasColumnName("username").IsRequired();
+            entity.Property(e => e.Password).HasColumnName("password").IsRequired();
             entity.Property(e => e.FullName).HasColumnName("full_name");
             entity.Property(e => e.Role).HasColumnName("role").HasConversion<string>();
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
-        modelBuilder.Entity<Order>()
-            .Property(e => e.Status)
-            .HasConversion<string>();
+        // Configure Category entity
+        modelBuilder.Entity<Category>(entity =>
+        {
+            entity.ToTable("categories");
+            entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            entity.Property(e => e.CategoryName).HasColumnName("category_name").IsRequired();
+        });
 
-        modelBuilder.Entity<Promotion>()
-            .Property(e => e.DiscountType)
-            .HasConversion<string>();
+        // Configure Supplier entity
+        modelBuilder.Entity<Supplier>(entity =>
+        {
+            entity.ToTable("suppliers");
+            entity.Property(e => e.SupplierId).HasColumnName("supplier_id");
+            entity.Property(e => e.Name).HasColumnName("name").IsRequired();
+            entity.Property(e => e.Phone).HasColumnName("phone");
+            entity.Property(e => e.Email).HasColumnName("email");
+            entity.Property(e => e.Address).HasColumnName("address");
+        });
 
-        modelBuilder.Entity<Payment>()
-            .Property(e => e.PaymentMethod)
-            .HasConversion<string>();
+        // Configure Product entity
+        modelBuilder.Entity<Product>(entity =>
+        {
+            entity.ToTable("products");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            entity.Property(e => e.SupplierId).HasColumnName("supplier_id");
+            entity.Property(e => e.ProductName).HasColumnName("product_name").IsRequired();
+            entity.Property(e => e.Barcode).HasColumnName("barcode");
+            entity.Property(e => e.Price).HasColumnName("price").HasColumnType("decimal(10,2)");
+            entity.Property(e => e.Unit).HasColumnName("unit").HasDefaultValue("pcs");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-        // Configure primary keys explicitly for Database First
+            // Foreign keys
+            entity.HasOne(e => e.Category)
+                .WithMany(e => e.Products)
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Supplier)
+                .WithMany(e => e.Products)
+                .HasForeignKey(e => e.SupplierId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Configure other entities
+        modelBuilder.Entity<Order>(entity =>
+        {
+            entity.ToTable("orders");
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.TotalAmount).HasColumnType("decimal(10,2)");
+            entity.Property(e => e.DiscountAmount).HasColumnType("decimal(10,2)");
+            entity.Property(e => e.Status).HasConversion<string>();
+        });
+
+        modelBuilder.Entity<Promotion>(entity =>
+        {
+            entity.ToTable("promotions");
+            entity.Property(e => e.PromoId).HasColumnName("promo_id");
+            entity.Property(e => e.DiscountValue).HasColumnType("decimal(10,2)");
+            entity.Property(e => e.MinOrderAmount).HasColumnType("decimal(10,2)");
+            entity.Property(e => e.DiscountType).HasConversion<string>();
+        });
+
+        modelBuilder.Entity<Payment>(entity =>
+        {
+            entity.ToTable("payments");
+            entity.Property(e => e.PaymentId).HasColumnName("payment_id");
+            entity.Property(e => e.Amount).HasColumnType("decimal(10,2)");
+            entity.Property(e => e.PaymentMethod).HasConversion<string>();
+        });
+
+        modelBuilder.Entity<OrderItem>(entity =>
+        {
+            entity.ToTable("order_items");
+            entity.Property(e => e.OrderItemId).HasColumnName("order_item_id");
+            entity.Property(e => e.Price).HasColumnType("decimal(10,2)");
+            entity.Property(e => e.Subtotal).HasColumnType("decimal(10,2)");
+        });
+
+        modelBuilder.Entity<Inventory>(entity =>
+        {
+            entity.ToTable("inventory");
+            entity.Property(e => e.InventoryId).HasColumnName("inventory_id");
+        });
+
+        modelBuilder.Entity<Customer>(entity =>
+        {
+            entity.ToTable("customers");
+            entity.Property(e => e.CustomerId).HasColumnName("customer_id");
+        });
+
+        // Configure primary keys
         modelBuilder.Entity<User>().HasKey(e => e.UserId);
         modelBuilder.Entity<Customer>().HasKey(e => e.CustomerId);
         modelBuilder.Entity<Category>().HasKey(e => e.CategoryId);
@@ -60,39 +139,5 @@ public class StoreDbContext : DbContext
         modelBuilder.Entity<Order>().HasKey(e => e.OrderId);
         modelBuilder.Entity<OrderItem>().HasKey(e => e.OrderItemId);
         modelBuilder.Entity<Payment>().HasKey(e => e.PaymentId);
-
-        // Configure decimal precision for MySQL
-        modelBuilder.Entity<Product>()
-            .Property(e => e.Price)
-            .HasColumnType("decimal(10,2)");
-
-        modelBuilder.Entity<Order>()
-            .Property(e => e.TotalAmount)
-            .HasColumnType("decimal(10,2)");
-
-        modelBuilder.Entity<Order>()
-            .Property(e => e.DiscountAmount)
-            .HasColumnType("decimal(10,2)");
-
-        modelBuilder.Entity<OrderItem>()
-            .Property(e => e.Price)
-            .HasColumnType("decimal(10,2)");
-
-        modelBuilder.Entity<OrderItem>()
-            .Property(e => e.Subtotal)
-            .HasColumnType("decimal(10,2)");
-
-        modelBuilder.Entity<Promotion>()
-            .Property(e => e.DiscountValue)
-            .HasColumnType("decimal(10,2)");
-
-        modelBuilder.Entity<Promotion>()
-            .Property(e => e.MinOrderAmount)
-            .HasColumnType("decimal(10,2)");
-
-        modelBuilder.Entity<Payment>()
-            .Property(e => e.Amount)
-            .HasColumnType("decimal(10,2)");
-
     }
 }
