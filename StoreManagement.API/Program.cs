@@ -106,8 +106,8 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ISupplierService, SupplierService>();
-builder.Services.AddScoped<IRepository<Category>, BaseRepository<Category>>();
-builder.Services.AddScoped<IRepository<Supplier>, BaseRepository<Supplier>>();
+builder.Services.AddScoped<IRepository<Category>, CategoryRepository>();
+builder.Services.AddScoped<IRepository<Supplier>, SupplierRepository>();
 
 var app = builder.Build();
 
