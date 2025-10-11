@@ -126,6 +126,11 @@ public class StoreDbContext : DbContext
         {
             entity.ToTable("customers");
             entity.Property(e => e.CustomerId).HasColumnName("customer_id");
+            entity.Property(e => e.Name).HasColumnName("name").IsRequired();
+            entity.Property(e => e.Phone).HasColumnName("phone");
+            entity.Property(e => e.Email).HasColumnName("email");
+            entity.Property(e => e.Address).HasColumnName("address");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
         // Configure primary keys

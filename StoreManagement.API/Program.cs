@@ -37,6 +37,8 @@ builder.Services.AddValidatorsFromAssemblyContaining<CreateCategoryRequestValida
 builder.Services.AddValidatorsFromAssemblyContaining<UpdateCategoryRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateSupplierRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<UpdateSupplierRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateCustomerRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateCustomerRequestValidator>();
 
 // Add DbContext with connection string from appsettings
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -98,7 +100,8 @@ builder.Services.AddAutoMapper(
     typeof(StoreManagement.Application.Mappings.UserMappingProfile),
     typeof(StoreManagement.Application.Mappings.ProductMappingProfile),
     typeof(StoreManagement.Application.Mappings.CategoryMappingProfile),
-    typeof(StoreManagement.Application.Mappings.SupplierMappingProfile));
+    typeof(StoreManagement.Application.Mappings.SupplierMappingProfile),
+    typeof(StoreManagement.Application.Mappings.CustomerMappingProfile));
 
 // Register Application services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -106,6 +109,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ISupplierService, SupplierService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IRepository<Category>, CategoryRepository>();
 builder.Services.AddScoped<IRepository<Supplier>, SupplierRepository>();
 
