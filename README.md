@@ -2,32 +2,58 @@
 
 ## 📋 Tổng Quan
 
-Backend API cho hệ thống quản lý cửa hàng được xây dựng bằng .NET 9 với kiến trúc 3-Layer đơn giản, phù hợp cho dự án tầm trung.
+Backend API cho hệ thống quản lý cửa hàng được xây dựng bằng .NET 9 với kiến trúc **Clean Architecture** 4-layer, đảm bảo tính maintainability, testability và scalability cao.
 
 ### 🎯 Tính Năng Chính
 
 - ✅ **Authentication & Authorization** - JWT Bearer Token với Role-based Access Control
-- ✅ **User Management** - Quản lý người dùng hệ thống
-- ✅ **Customer Management** - Quản lý khách hàng
-- ✅ **Product Management** - Quản lý sản phẩm và danh mục
-- ✅ **Order Processing** - Xử lý đơn hàng
-- ✅ **Payment Handling** - Quản lý thanh toán
-- ✅ **Inventory Tracking** - Theo dõi tồn kho
-- ✅ **Promotion System** - Hệ thống khuyến mãi
+- ✅ **User Management** - Quản lý người dùng hệ thống (Admin/Staff)
+- ✅ **Customer Management** - Quản lý khách hàng với tìm kiếm và phân trang
+- ✅ **Product Management** - Quản lý sản phẩm với danh mục
+- ✅ **Category Management** - Quản lý danh mục sản phẩm
+- ✅ **Supplier Management** - Quản lý nhà cung cấp
+- 🚧 **Order Processing** - Xử lý đơn hàng (Đang phát triển)
+- 🚧 **Payment Handling** - Quản lý thanh toán (Đang phát triển)
+- 🚧 **Inventory Tracking** - Theo dõi tồn kho (Đang phát triển)
+- 🚧 **Promotion System** - Hệ thống khuyến mãi (Đang phát triển)
 
 ### 🏗️ Kiến Trúc
 
 ```
-┌─────────────────────────────────────┐
-│           Presentation Layer        │
-│         (StoreManagement.API)       │
-├─────────────────────────────────────┤
-│         Business Logic Layer        │
-│     (StoreManagement.Application)   │
-├─────────────────────────────────────┤
-│        Data Access Layer            │
-│    (StoreManagement.Infrastructure) │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    StoreManagement.API                     │
+│                  (Presentation Layer)                      │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ Controllers │ Middleware │ Authorization │ Config   │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────┬───────────────────────────────────┘
+                          │ References
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                StoreManagement.Application                  │
+│                (Business Logic Layer)                       │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ Services │ DTOs │ Validators │ Mappings │ Common    │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────┬───────────────────────────────────┘
+                          │ References
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│               StoreManagement.Infrastructure                │
+│                 (Data Access Layer)                         │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ DbContext │ Repositories │ Services │ Extensions   │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────┬───────────────────────────────────┘
+                          │ References
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  StoreManagement.Domain                     │
+│                    (Core Layer)                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ Entities │ Enums │ Interfaces │ (No Dependencies)  │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ## 🛠️ Technology Stack
@@ -46,6 +72,7 @@ Backend API cho hệ thống quản lý cửa hàng được xây dựng bằng 
 
 - [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
 - [MySQL 8.0](https://dev.mysql.com/downloads/mysql/)
+- Git (để clone repository)
 
 ### 1. Start MySQL Service
 
@@ -63,8 +90,11 @@ net start MySQL80
 ### 2. Setup Database
 
 ```bash
+# Create database (if not exists)
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS store_management;"
+
 # Import database schema
-mysql -u root -p < "Store Management Full.sql"
+mysql -u root -p store_management < "Store Management Full.sql"
 
 # Verify database created
 mysql -u root -p -e "USE store_management; SHOW TABLES;"
@@ -112,6 +142,37 @@ open http://localhost:5000/swagger
 
 - **Admin:** username: `admin`, password: `123456`
 - **Staff:** username: `staff01`, password: `123456`
+
+## 📊 Project Status
+
+### ✅ Completed Features
+
+- **Authentication System**: JWT-based authentication with refresh tokens
+- **User Management**: Full CRUD operations for system users
+- **Customer Management**: Complete customer management with search functionality
+- **Product Management**: Product CRUD with category relationships
+- **Category Management**: Product category management
+- **Supplier Management**: Supplier information management
+- **Authorization**: Role-based access control (Admin/Staff)
+- **API Documentation**: Swagger/OpenAPI integration
+- **Validation**: FluentValidation for all endpoints
+- **Error Handling**: Global exception middleware
+
+### 🚧 In Development
+
+- **Order Management**: Order processing system
+- **Payment Processing**: Payment handling and tracking
+- **Inventory Management**: Stock tracking and management
+- **Promotion System**: Discount and promotion management
+
+### 🎯 Architecture Benefits
+
+- **Clean Architecture**: 4-layer separation for maintainability
+- **Dependency Injection**: Proper DI configuration
+- **Repository Pattern**: Clean data access layer
+- **AutoMapper**: Consistent entity-DTO mapping
+- **Async/Await**: Non-blocking database operations
+- **Security**: JWT authentication + role-based authorization
 
 ---
 
@@ -261,9 +322,8 @@ API sẽ chạy trên:
 - `POST /api/auth/login` - Đăng nhập (trả về token + refreshToken)
 - `POST /api/auth/refresh` - Lấy token mới bằng refreshToken (rotate)
 - `POST /api/auth/logout` - Thu hồi refreshToken hiện tại
-- `POST /api/auth/register` - Đăng ký (admin only)
 
-### Users
+### Users (Admin/Staff Only)
 
 - `GET /api/users` - Lấy danh sách người dùng (paginated)
 - `GET /api/users/{id}` - Lấy thông tin người dùng
@@ -271,15 +331,15 @@ API sẽ chạy trên:
 - `PUT /api/users/{id}` - Cập nhật người dùng
 - `DELETE /api/users/{id}` - Xóa người dùng
 
-### Customers
+### Customers (Staff/Admin Only)
 
-- `GET /api/customers` - Lấy danh sách khách hàng (paginated)
+- `GET /api/customers` - Lấy danh sách khách hàng (paginated + search)
 - `GET /api/customers/{id}` - Lấy thông tin khách hàng
 - `POST /api/customers` - Tạo khách hàng mới
 - `PUT /api/customers/{id}` - Cập nhật khách hàng
 - `DELETE /api/customers/{id}` - Xóa khách hàng
 
-### Products
+### Products (Staff/Admin Only)
 
 - `GET /api/products` - Lấy danh sách sản phẩm (paginated)
 - `GET /api/products/{id}` - Lấy thông tin sản phẩm
@@ -287,19 +347,28 @@ API sẽ chạy trên:
 - `PUT /api/products/{id}` - Cập nhật sản phẩm
 - `DELETE /api/products/{id}` - Xóa sản phẩm
 
-### Orders
+### Categories (Staff/Admin Only)
 
-- `GET /api/orders` - Lấy danh sách đơn hàng (paginated)
-- `GET /api/orders/{id}` - Lấy thông tin đơn hàng
-- `POST /api/orders` - Tạo đơn hàng mới
-- `PUT /api/orders/{id}` - Cập nhật đơn hàng
-- `DELETE /api/orders/{id}` - Hủy đơn hàng
+- `GET /api/categories` - Lấy danh sách danh mục (paginated)
+- `GET /api/categories/{id}` - Lấy thông tin danh mục
+- `POST /api/categories` - Tạo danh mục mới
+- `PUT /api/categories/{id}` - Cập nhật danh mục
+- `DELETE /api/categories/{id}` - Xóa danh mục
 
-### Payments
+### Suppliers (Staff/Admin Only)
 
-- `GET /api/payments` - Lấy danh sách thanh toán (paginated)
-- `GET /api/payments/{id}` - Lấy thông tin thanh toán
-- `POST /api/payments` - Tạo thanh toán mới
+- `GET /api/suppliers` - Lấy danh sách nhà cung cấp (paginated)
+- `GET /api/suppliers/{id}` - Lấy thông tin nhà cung cấp
+- `POST /api/suppliers` - Tạo nhà cung cấp mới
+- `PUT /api/suppliers/{id}` - Cập nhật nhà cung cấp
+- `DELETE /api/suppliers/{id}` - Xóa nhà cung cấp
+
+### 🚧 Coming Soon
+
+- **Orders** - Quản lý đơn hàng
+- **Payments** - Xử lý thanh toán
+- **Inventory** - Theo dõi tồn kho
+- **Promotions** - Hệ thống khuyến mãi
 
 ## 📊 Response Format
 
@@ -365,8 +434,10 @@ POST /api/auth/login
 ```json
 {
   "success": true,
+  "message": "Login successful",
   "data": {
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "refresh_token_string_here",
     "expiresAt": "2025-01-01T01:00:00Z",
     "user": {
       "userId": 1,
@@ -374,7 +445,8 @@ POST /api/auth/login
       "fullName": "Administrator",
       "role": "Admin"
     }
-  }
+  },
+  "timestamp": "2025-01-01T00:00:00Z"
 }
 ```
 
@@ -387,18 +459,21 @@ curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
 
 ## 🗄️ Database Schema
 
-### Core Tables
+### Core Tables (Currently Implemented)
 
-- **users** - Người dùng hệ thống (admin, staff)
-- **customers** - Khách hàng
-- **categories** - Danh mục sản phẩm
-- **suppliers** - Nhà cung cấp
-- **products** - Sản phẩm
-- **inventory** - Tồn kho
-- **promotions** - Khuyến mãi
-- **orders** - Đơn hàng
-- **order_items** - Chi tiết đơn hàng
-- **payments** - Thanh toán
+- **users** - Người dùng hệ thống (admin, staff) ✅
+- **customers** - Khách hàng ✅
+- **categories** - Danh mục sản phẩm ✅
+- **suppliers** - Nhà cung cấp ✅
+- **products** - Sản phẩm ✅
+
+### Planned Tables (Coming Soon)
+
+- **inventory** - Tồn kho 🚧
+- **promotions** - Khuyến mãi 🚧
+- **orders** - Đơn hàng 🚧
+- **order_items** - Chi tiết đơn hàng 🚧
+- **payments** - Thanh toán 🚧
 
 ## 🧪 Testing
 
@@ -424,42 +499,48 @@ dotnet test --collect:"XPlat Code Coverage"
 
 ```
 StoreManagement/
-├── StoreManagement.Domain/           # Domain entities & interfaces
-│   ├── Entities/                     # Domain entities (User, Product, Order, etc.)
+├── StoreManagement.Domain/           # Domain entities & interfaces (Core Layer)
+│   ├── Entities/                     # Domain entities (User, Product, Category, etc.)
 │   ├── Enums/                        # Enumerations (UserRole, OrderStatus, etc.)
-│   └── Interfaces/                   # Repository interfaces
-├── StoreManagement.Application/      # Business logic & DTOs
-│   ├── Common/Interfaces/            # Application interfaces (JWT, Password)
+│   └── Interfaces/                   # Repository interfaces (IRepository, IUserRepository, etc.)
+├── StoreManagement.Application/      # Business logic & DTOs (Application Layer)
+│   ├── Common/Interfaces/            # Application interfaces (IJwtService, IPasswordService)
 │   ├── DTOs/                         # Data Transfer Objects
-│   │   ├── Auth/                     # Authentication DTOs
-│   │   └── Users/                    # User-related DTOs
+│   │   ├── Auth/                     # Authentication DTOs (LoginRequest, LoginResponse)
+│   │   ├── Users/                    # User-related DTOs
+│   │   ├── Customer/                 # Customer-related DTOs
+│   │   ├── Product/                  # Product-related DTOs
+│   │   ├── Category/                 # Category-related DTOs
+│   │   └── Suppliers/                # Supplier-related DTOs
 │   ├── Mappings/                     # AutoMapper profiles
-│   ├── Services/                     # Application services
+│   ├── Services/                     # Application services (IAuthService, IUserService, etc.)
 │   └── Validators/                   # FluentValidation validators
-├── StoreManagement.Infrastructure/   # Data access & external services
+├── StoreManagement.Infrastructure/   # Data access & external services (Infrastructure Layer)
 │   ├── Data/                         # DbContext & database configuration
-│   ├── Extensions/                   # Service collection extensions
-│   ├── Migrations/                   # Entity Framework migrations
+│   ├── Extensions/                   # Service collection extensions (DI configuration)
 │   ├── Models/                       # Infrastructure models (JwtSettings)
 │   ├── Repositories/                 # Repository implementations
-│   └── Services/                     # Infrastructure services (JWT, Password)
-└── StoreManagement.API/              # Controllers & middleware
+│   └── Services/                     # Infrastructure services (JwtService, PasswordService)
+└── StoreManagement.API/              # Controllers & middleware (Presentation Layer)
     ├── Attributes/                   # Custom attributes (AuthorizeRoleAttribute)
     ├── Authorization/                # Authorization handlers & requirements
-    ├── Controllers/                  # API controllers
+    ├── Controllers/                  # API controllers (AuthController, UsersController, etc.)
     ├── Middleware/                   # Custom middleware (GlobalExceptionMiddleware)
-    ├── Models/                       # API response models (ApiResponse, PagedResult)
-    └── Services/                     # API-specific services
+    └── Models/                       # API response models (ApiResponse, PagedResult)
 ```
 
 ### Best Practices
 
-- ✅ Sử dụng `ApiResponse<T>` cho consistent response format
-- ✅ Implement pagination cho list endpoints
-- ✅ Sử dụng FluentValidation cho input validation
-- ✅ Handle errors với GlobalExceptionMiddleware
-- ✅ JWT authentication cho protected endpoints
-- ✅ Async/await pattern cho database operations
+- ✅ **Clean Architecture**: Tuân thủ 4-layer architecture với dependency inversion
+- ✅ **Consistent Response**: Sử dụng `ApiResponse<T>` cho consistent response format
+- ✅ **Pagination**: Implement pagination cho tất cả list endpoints
+- ✅ **Validation**: Sử dụng FluentValidation cho input validation
+- ✅ **Error Handling**: Handle errors với GlobalExceptionMiddleware
+- ✅ **Security**: JWT authentication + Role-based authorization
+- ✅ **Async/Await**: Async/await pattern cho tất cả database operations
+- ✅ **Dependency Injection**: Proper DI configuration và service registration
+- ✅ **Repository Pattern**: Clean separation giữa business logic và data access
+- ✅ **AutoMapper**: Consistent mapping giữa entities và DTOs
 
 ### Git Workflow
 
@@ -541,9 +622,11 @@ dotnet build
 
 ### Project Documentation
 
+- 🏗️ [Project Layer Architecture & References](doc/Project_Layer_Architecture_and_References.md) - Chi tiết về kiến trúc 4-layer và dependencies
 - 📖 [Authentication Implementation](doc/Authentication_Implementation.md) - Chi tiết về hệ thống xác thực JWT
 - 🔐 [Authorization Implementation](doc/Authorization_Implementation.md) - Hệ thống phân quyền Role-based Access Control
 - 👥 [User Management Implementation](doc/User_Management_Implementation.md) - Quản lý người dùng hệ thống
+- 🛒 [Customer API Implementation](doc/Customer_API_Implementation.md) - API quản lý khách hàng
 - 📋 [Development Plan](doc/Store_Management_Backend_Development_Plan.md) - Kế hoạch phát triển dự án
 
 ### External Resources
