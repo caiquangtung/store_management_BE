@@ -1,0 +1,111 @@
+### Promotion API Examples
+### Base URL: https://localhost:7001/api/promotion
+
+### Variables
+@baseUrl = https://localhost:7001/api
+@token = your-jwt-token-here
+
+### 1. Get all promotions with pagination
+GET {{baseUrl}}/promotion?pageNumber=1&pageSize=10
+Authorization: Bearer {{token}}
+
+### 2. Get promotion by ID
+GET {{baseUrl}}/promotion/1
+Authorization: Bearer {{token}}
+
+### 3. Get promotion by promo code
+GET {{baseUrl}}/promotion/by-code/SALE10
+Authorization: Bearer {{token}}
+
+### 4. Get active promotions only
+GET {{baseUrl}}/promotion/active
+Authorization: Bearer {{token}}
+
+### 5. Check if promo code exists
+GET {{baseUrl}}/promotion/check-code/SALE10
+Authorization: Bearer {{token}}
+
+### 6. Validate promotion
+POST {{baseUrl}}/promotion/validate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "promoCode": "SALE10",
+  "orderAmount": 150000
+}
+
+### 7. Calculate discount amount
+POST {{baseUrl}}/promotion/calculate-discount
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "promoCode": "SALE10",
+  "orderAmount": 150000
+}
+
+### 8. Create new promotion (Admin only)
+POST {{baseUrl}}/promotion
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "promoCode": "SUMMER2024",
+  "description": "Summer sale 20% off",
+  "discountType": 0,
+  "discountValue": 20,
+  "startDate": "2024-06-01T00:00:00Z",
+  "endDate": "2024-08-31T23:59:59Z",
+  "minOrderAmount": 100000,
+  "usageLimit": 1000
+}
+
+### 9. Create fixed discount promotion (Admin only)
+POST {{baseUrl}}/promotion
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "promoCode": "FREESHIP50K",
+  "description": "Free shipping 50k for orders over 300k",
+  "discountType": 1,
+  "discountValue": 50000,
+  "startDate": "2024-01-01T00:00:00Z",
+  "endDate": "2024-12-31T23:59:59Z",
+  "minOrderAmount": 300000,
+  "usageLimit": 500
+}
+
+### 10. Update promotion (Admin only)
+PUT {{baseUrl}}/promotion/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "promoId": 1,
+  "promoCode": "SALE10",
+  "description": "Updated description for 10% sale",
+  "discountType": 0,
+  "discountValue": 10,
+  "startDate": "2024-01-01T00:00:00Z",
+  "endDate": "2024-12-31T23:59:59Z",
+  "minOrderAmount": 0,
+  "usageLimit": 0,
+  "usedCount": 0,
+  "status": "active"
+}
+
+### 11. Delete promotion (Admin only)
+DELETE {{baseUrl}}/promotion/1
+Authorization: Bearer {{token}}
+
+### 12. Deactivate expired promotions (Admin only)
+POST {{baseUrl}}/promotion/deactivate-expired
+Authorization: Bearer {{token}}
+
+### Notes:
+### - DiscountType enum values: 0 = Percent, 1 = Fixed (auto-assigned by C#)
+### - All dates should be in ISO 8601 format
+### - Admin role required for create, update, delete operations
+### - Staff and Admin roles can access read operations and validation

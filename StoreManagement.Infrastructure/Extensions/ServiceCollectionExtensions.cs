@@ -17,6 +17,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<IPromotionRepository, PromotionRepository>();
         // services.AddScoped<IOrderRepository, OrderRepository>();
         // services.AddScoped<IPaymentRepository, PaymentRepository>();
 
