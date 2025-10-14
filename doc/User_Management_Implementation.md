@@ -410,6 +410,154 @@ builder.Services.AddValidatorsFromAssemblyContaining<UpdateUserRequestValidator>
 - **Audit Trail**: Complete audit logging
 - **API Versioning**: Version API endpoints
 
+## Entity Framework Enum Configuration
+
+### UserRole Enum Conversion Issue
+
+**Vấn đề:** Khi sử dụng `HasConversion<string>()` đơn giản, Entity Framework có thể trả về giá trị số (0, 1) thay vì tên enum (Admin, Staff) khi đọc từ database.
+
+**Nguyên nhân:**
+
+- Database MySQL có cột `role ENUM('admin','staff')`
+- Entity Framework conversion không đủ rõ ràng để handle việc convert 2 chiều
+
+**Giải pháp đã áp dụng:**
+
+```csharp
+entity.Property(e => e.Role)
+    .HasColumnName("role")
+    .HasConversion(
+        v => v.ToString().ToLowerInvariant(),  // C# enum -> Database string
+        v => Enum.Parse<UserRole>(v, true)     // Database string -> C# enum
+    );
+```
+
+**Lợi ích:**
+
+- ✅ Đảm bảo enum được convert đúng 2 chiều
+- ✅ Database lưu dạng string ('admin', 'staff')
+- ✅ API response trả về tên enum ('Admin', 'Staff')
+- ✅ Type-safe conversion với case-insensitive parsing
+
+**Kết quả:**
+
+- Trước: API trả về `"role": 0` hoặc `"role": 1`
+- Sau: API trả về `"role": "Admin"` hoặc `"role": "Staff"`
+
+### JSON Serialization Configuration
+
+**Vấn đề bổ sung:** Mặc dù Entity Framework đã được cấu hình đúng, JSON serialization vẫn có thể trả về enum dưới dạng số.
+
+**Giải pháp:** Cấu hình JSON converter trong `Program.cs`:
+
+```csharp
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
+```
+
+**Lợi ích:**
+
+- ✅ Tất cả enum trong API response sẽ được serialize thành string
+- ✅ Consistent behavior giữa Auth API và User API
+- ✅ Frontend có thể xử lý enum values dễ dàng hơn
+
+## Authorization Policy Configuration
+
+### AuthorizeRoleAttribute Issue
+
+**Vấn đề:** `AuthorizeRoleAttribute` tạo policy name không khớp với policy names đã định nghĩa trong `Program.cs`.
+
+**Lỗi:** `"The AuthorizationPolicy named: 'Staff,Admin' was not found."`
+
+**Nguyên nhân:**
+
+- `AuthorizeRoleAttribute` tạo policy name bằng cách join roles: `"Staff,Admin"`
+- Nhưng `Program.cs` định nghĩa policy name khác: `"AdminOrStaff"`
+
+**Giải pháp:** Cập nhật `AuthorizeRoleAttribute` để map đúng policy names:
+
+```csharp
+private static string GetPolicyName(UserRole[] roles)
+{
+    var sortedRoles = roles.OrderBy(r => r.ToString()).ToArray();
+
+    if (sortedRoles.Length == 1)
+    {
+        return sortedRoles[0] == UserRole.Admin ? "AdminOnly" : "AllRoles";
+    }
+
+    if (sortedRoles.Length == 2 && sortedRoles.Contains(UserRole.Admin) && sortedRoles.Contains(UserRole.Staff))
+    {
+        return "AdminOrStaff";
+    }
+
+    // Fallback: create policy name from roles
+    var roleNames = sortedRoles.Select(r => r.ToString()).ToArray();
+    return string.Join("Or", roleNames);
+}
+```
+
+**Kết quả:**
+
+- ✅ `[AuthorizeRole(UserRole.Staff, UserRole.Admin)]` → Policy: `"AdminOrStaff"`
+- ✅ `[AuthorizeRole(UserRole.Admin)]` → Policy: `"AdminOnly"`
+- ✅ `[AuthorizeRole(UserRole.Staff)]` → Policy: `"AllRoles"`
+
+## Entity Framework Column Mapping Issues
+
+### Promotion Entity Mapping
+
+**Vấn đề:** Lỗi `"Unknown column 'p.DiscountType' in 'field list'"` khi truy vấn Promotion entity.
+
+**Nguyên nhân:** Entity Framework configuration thiếu mapping cho các cột database.
+
+**Database Schema:**
+
+```sql
+CREATE TABLE promotions (
+    promo_id INT AUTO_INCREMENT PRIMARY KEY,
+    promo_code VARCHAR(50) UNIQUE NOT NULL,
+    description VARCHAR(255),
+    discount_type ENUM('percent','fixed') NOT NULL,
+    discount_value DECIMAL(10,2) NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    min_order_amount DECIMAL(10,2) DEFAULT 0,
+    usage_limit INT DEFAULT 0,
+    used_count INT DEFAULT 0,
+    status ENUM('active','inactive') DEFAULT 'active'
+);
+```
+
+**Giải pháp:** Cập nhật Entity Framework configuration trong `StoreDbContext.cs`:
+
+```csharp
+modelBuilder.Entity<Promotion>(entity =>
+{
+    entity.ToTable("promotions");
+    entity.Property(e => e.PromoId).HasColumnName("promo_id");
+    entity.Property(e => e.PromoCode).HasColumnName("promo_code");
+    entity.Property(e => e.Description).HasColumnName("description");
+    entity.Property(e => e.DiscountType).HasColumnName("discount_type").HasConversion<string>();
+    entity.Property(e => e.DiscountValue).HasColumnName("discount_value").HasColumnType("decimal(10,2)");
+    entity.Property(e => e.StartDate).HasColumnName("start_date");
+    entity.Property(e => e.EndDate).HasColumnName("end_date");
+    entity.Property(e => e.MinOrderAmount).HasColumnName("min_order_amount").HasColumnType("decimal(10,2)");
+    entity.Property(e => e.UsageLimit).HasColumnName("usage_limit");
+    entity.Property(e => e.UsedCount).HasColumnName("used_count");
+    entity.Property(e => e.Status).HasColumnName("status");
+});
+```
+
+**Kết quả:**
+
+- ✅ Entity Framework có thể map đúng tất cả properties với database columns
+- ✅ Promotion API hoạt động bình thường
+- ✅ Database queries thành công
+
 ## Authorization Implementation
 
 ### Role-based Access Control

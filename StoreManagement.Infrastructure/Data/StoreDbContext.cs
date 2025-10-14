@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using StoreManagement.Domain.Entities;
+using StoreManagement.Domain.Enums;
 
 namespace StoreManagement.Infrastructure.Data;
 
@@ -33,7 +34,12 @@ public class StoreDbContext : DbContext
             entity.Property(e => e.Username).HasColumnName("username").IsRequired();
             entity.Property(e => e.Password).HasColumnName("password").IsRequired();
             entity.Property(e => e.FullName).HasColumnName("full_name");
-            entity.Property(e => e.Role).HasColumnName("role").HasConversion<string>();
+            entity.Property(e => e.Role)
+                .HasColumnName("role")
+                .HasConversion(
+                    v => v.ToString().ToLowerInvariant(),
+                    v => Enum.Parse<UserRole>(v, true)
+                );
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
@@ -95,9 +101,16 @@ public class StoreDbContext : DbContext
         {
             entity.ToTable("promotions");
             entity.Property(e => e.PromoId).HasColumnName("promo_id");
-            entity.Property(e => e.DiscountValue).HasColumnType("decimal(10,2)");
-            entity.Property(e => e.MinOrderAmount).HasColumnType("decimal(10,2)");
-            entity.Property(e => e.DiscountType).HasConversion<string>();
+            entity.Property(e => e.PromoCode).HasColumnName("promo_code");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.DiscountType).HasColumnName("discount_type").HasConversion<string>();
+            entity.Property(e => e.DiscountValue).HasColumnName("discount_value").HasColumnType("decimal(10,2)");
+            entity.Property(e => e.StartDate).HasColumnName("start_date");
+            entity.Property(e => e.EndDate).HasColumnName("end_date");
+            entity.Property(e => e.MinOrderAmount).HasColumnName("min_order_amount").HasColumnType("decimal(10,2)");
+            entity.Property(e => e.UsageLimit).HasColumnName("usage_limit");
+            entity.Property(e => e.UsedCount).HasColumnName("used_count");
+            entity.Property(e => e.Status).HasColumnName("status");
         });
 
         modelBuilder.Entity<Payment>(entity =>
