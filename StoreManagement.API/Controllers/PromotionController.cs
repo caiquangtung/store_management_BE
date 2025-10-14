@@ -307,15 +307,6 @@ public class PromotionController : ControllerBase
     {
         try
         {
-            if (id != request.PromoId)
-            {
-                return BadRequest(new ApiResponse<PromotionResponse>
-                {
-                    Success = false,
-                    Message = "ID mismatch"
-                });
-            }
-
             // Check if promotion exists
             var existingPromotion = await _promotionService.GetPromotionByIdAsync(id);
             if (existingPromotion == null)
@@ -337,7 +328,7 @@ public class PromotionController : ControllerBase
                 });
             }
 
-            var promotion = await _promotionService.UpdatePromotionAsync(request);
+            var promotion = await _promotionService.UpdatePromotionAsync(id, request);
             return Ok(new ApiResponse<PromotionResponse>
             {
                 Success = true,

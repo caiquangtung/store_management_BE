@@ -14,6 +14,7 @@ public class CustomerMappingProfile : Profile
             .ForMember(dest => dest.Orders, opt => opt.Ignore());
 
         CreateMap<UpdateCustomerRequest, Customer>()
+            .ForMember(dest => dest.CustomerId, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.Orders, opt => opt.Ignore());
 

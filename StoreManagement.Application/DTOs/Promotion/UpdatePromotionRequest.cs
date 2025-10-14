@@ -4,7 +4,6 @@ namespace StoreManagement.Application.DTOs.Promotion;
 
 public class UpdatePromotionRequest
 {
-    public int PromoId { get; set; }
     public string PromoCode { get; set; } = string.Empty;
     public string? Description { get; set; }
     public DiscountType DiscountType { get; set; }

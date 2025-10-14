@@ -216,15 +216,6 @@ public class CustomerController : ControllerBase
     {
         try
         {
-            if (id != request.CustomerId)
-            {
-                return BadRequest(new ApiResponse<CustomerResponse>
-                {
-                    Success = false,
-                    Message = "ID mismatch"
-                });
-            }
-
             // Check if customer exists
             if (!await _customerService.CustomerExistsAsync(id))
             {
@@ -249,7 +240,7 @@ public class CustomerController : ControllerBase
                 }
             }
 
-            var customer = await _customerService.UpdateCustomerAsync(request);
+            var customer = await _customerService.UpdateCustomerAsync(id, request);
             return Ok(new ApiResponse<CustomerResponse>
             {
                 Success = true,

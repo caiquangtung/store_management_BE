@@ -11,6 +11,6 @@ public interface ICustomerService
     Task<bool> EmailExistsAsync(string email);
     Task<bool> CustomerExistsAsync(int customerId);
     Task<CustomerResponse> CreateCustomerAsync(CreateCustomerRequest request);
-    Task<CustomerResponse?> UpdateCustomerAsync(UpdateCustomerRequest request);
+    Task<CustomerResponse?> UpdateCustomerAsync(int id, UpdateCustomerRequest request);
     Task<bool> DeleteCustomerAsync(int customerId);
 }

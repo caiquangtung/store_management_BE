@@ -13,7 +13,7 @@ public interface IPromotionService
     Task<bool> PromoCodeExistsAsync(string promoCode);
     Task<bool> PromoCodeExistsForOtherPromotionAsync(string promoCode, int promotionId);
     Task<PromotionResponse> CreatePromotionAsync(CreatePromotionRequest request);
-    Task<PromotionResponse?> UpdatePromotionAsync(UpdatePromotionRequest request);
+    Task<PromotionResponse?> UpdatePromotionAsync(int id, UpdatePromotionRequest request);
     Task<bool> DeletePromotionAsync(int promotionId);
     Task<PromotionValidationResponse> ValidatePromotionAsync(ValidatePromotionRequest request);
     Task<decimal> CalculateDiscountAsync(int promotionId, decimal orderAmount);

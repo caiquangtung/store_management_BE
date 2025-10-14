@@ -73,9 +73,9 @@ public class PromotionService : IPromotionService
         return _mapper.Map<PromotionResponse>(createdPromotion);
     }
 
-    public async Task<PromotionResponse?> UpdatePromotionAsync(UpdatePromotionRequest request)
+    public async Task<PromotionResponse?> UpdatePromotionAsync(int id, UpdatePromotionRequest request)
     {
-        var existingPromotion = await _promotionRepository.GetByIdAsync(request.PromoId);
+        var existingPromotion = await _promotionRepository.GetByIdAsync(id);
         if (existingPromotion == null)
             return null;
 

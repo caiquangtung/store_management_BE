@@ -67,9 +67,9 @@ public class CustomerService : ICustomerService
         return _mapper.Map<CustomerResponse>(createdCustomer);
     }
 
-    public async Task<CustomerResponse?> UpdateCustomerAsync(UpdateCustomerRequest request)
+    public async Task<CustomerResponse?> UpdateCustomerAsync(int id, UpdateCustomerRequest request)
     {
-        var existingCustomer = await _customerRepository.GetByIdAsync(request.CustomerId);
+        var existingCustomer = await _customerRepository.GetByIdAsync(id);
         if (existingCustomer == null)
             return null;
 

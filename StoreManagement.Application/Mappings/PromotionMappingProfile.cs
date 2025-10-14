@@ -15,6 +15,7 @@ public class PromotionMappingProfile : Profile
             .ForMember(dest => dest.Orders, opt => opt.Ignore());
 
         CreateMap<UpdatePromotionRequest, Promotion>()
+            .ForMember(dest => dest.PromoId, opt => opt.Ignore())
             .ForMember(dest => dest.Orders, opt => opt.Ignore());
 
         CreateMap<Promotion, PromotionResponse>()
