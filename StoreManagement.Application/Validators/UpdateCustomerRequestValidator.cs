@@ -7,8 +7,6 @@ public class UpdateCustomerRequestValidator : AbstractValidator<UpdateCustomerRe
 {
     public UpdateCustomerRequestValidator()
     {
-        RuleFor(x => x.CustomerId)
-            .GreaterThan(0).WithMessage("Customer ID must be greater than 0");
 
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("Customer name is required")

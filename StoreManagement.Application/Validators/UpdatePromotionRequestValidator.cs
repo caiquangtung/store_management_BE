@@ -8,8 +8,7 @@ public class UpdatePromotionRequestValidator : AbstractValidator<UpdatePromotion
 {
     public UpdatePromotionRequestValidator()
     {
-        RuleFor(x => x.PromoId)
-            .GreaterThan(0).WithMessage("Promo ID must be greater than 0");
+
 
         RuleFor(x => x.PromoCode)
             .NotEmpty().WithMessage("Promo code is required")
