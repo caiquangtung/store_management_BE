@@ -15,6 +15,7 @@ using StoreManagement.Domain.Interfaces;
 using StoreManagement.Infrastructure.Repositories;
 using StoreManagement.Infrastructure.Extensions;
 using StoreManagement.Application.Common.Interfaces;
+using AutoMapper;
 using StoreManagement.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using StoreManagement.Domain.Entities;
@@ -148,6 +149,9 @@ app.UseSwaggerUI();
 app.UseGlobalExceptionMiddleware();
 
 app.UseHttpsRedirection();
+
+// Add Static Files to serve images from wwwroot
+app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();

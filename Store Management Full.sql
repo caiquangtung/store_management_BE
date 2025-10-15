@@ -48,6 +48,7 @@ CREATE TABLE products (
     barcode VARCHAR(50) UNIQUE,
     price DECIMAL(10,2) NOT NULL,
     unit VARCHAR(20) DEFAULT 'pcs',
+    image_path VARCHAR(255) NULL,  -- Trường mới để lưu đường dẫn ảnh (ví dụ: '/images/products/filename.jpg')
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

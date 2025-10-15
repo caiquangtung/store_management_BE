@@ -1,13 +1,18 @@
+using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 namespace StoreManagement.Application.DTOs.Products;
 
-public class ProductResponse
+public class UpdateProductRequest
 {
-    public int ProductId { get; set; }
+    [StringLength(100)]
+    public string? ProductName { get; set; }
     public int? CategoryId { get; set; }
     public int? SupplierId { get; set; }
-    public string ProductName { get; set; } = string.Empty;
+    [StringLength(50)]
     public string? Barcode { get; set; }
-    public decimal Price { get; set; }
-    public string Unit { get; set; } = "pcs";
-    public DateTime CreatedAt { get; set; }
+    [Range(0.01, double.MaxValue)]
+    public decimal? Price { get; set; }
+    [StringLength(20)]
+    public string? Unit { get; set; }
+    public IFormFile? Image { get; set; }  // New field for file update
 }
