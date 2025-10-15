@@ -10,6 +10,7 @@ public class Product
     public decimal Price { get; set; }
     public string Unit { get; set; } = "pcs";
     public DateTime CreatedAt { get; set; }
+    public string? ImagePath { get; set; } = null;  
 
     // Navigation properties
     public virtual Category? Category { get; set; }

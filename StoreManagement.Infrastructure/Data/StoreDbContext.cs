@@ -74,7 +74,8 @@ public class StoreDbContext : DbContext
             entity.Property(e => e.Price).HasColumnName("price").HasColumnType("decimal(10,2)");
             entity.Property(e => e.Unit).HasColumnName("unit").HasDefaultValue("pcs");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
-
+            entity.Property(e => e.ImagePath).HasColumnName("image_path");
+            
             // Foreign keys
             entity.HasOne(e => e.Category)
                 .WithMany(e => e.Products)

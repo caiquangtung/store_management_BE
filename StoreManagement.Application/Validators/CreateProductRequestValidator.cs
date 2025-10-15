@@ -1,5 +1,6 @@
 using FluentValidation;
 using StoreManagement.Application.DTOs.Products;
+using Microsoft.AspNetCore.Http;
 
 namespace StoreManagement.Application.Validators;
 
@@ -29,5 +30,17 @@ public class CreateProductRequestValidator : AbstractValidator<CreateProductRequ
         RuleFor(x => x.SupplierId)
             .GreaterThan(0).WithMessage("Supplier ID must be greater than 0")
             .When(x => x.SupplierId.HasValue);
+
+        RuleFor(x => x.Image)
+            .Must(BeAValidImage).WithMessage("Only JPG, JPEG, PNG images are allowed")
+            .When(x => x.Image != null);
+    }
+
+    private bool BeAValidImage(IFormFile file)
+    {
+        if (file == null) return true;
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        return allowedExtensions.Contains(extension);
     }
 }
