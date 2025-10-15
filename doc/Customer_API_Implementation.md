@@ -41,6 +41,8 @@ public interface ICustomerRepository : IRepository<Customer>
 {
     Task<Customer?> GetByEmailAsync(string email);
     Task<bool> EmailExistsAsync(string email);
+    Task<Customer?> GetByPhoneAsync(string phone);
+    Task<bool> PhoneExistsAsync(string phone);
 }
 ```
 
@@ -84,6 +86,18 @@ public class CustomerRepository : BaseRepository<Customer>, ICustomerRepository
         return await _context.Customers
             .AnyAsync(c => c.Email == email);
     }
+
+    public async Task<Customer?> GetByPhoneAsync(string phone)
+    {
+        return await _context.Customers
+            .FirstOrDefaultAsync(c => c.Phone == phone);
+    }
+
+    public async Task<bool> PhoneExistsAsync(string phone)
+    {
+        return await _context.Customers
+            .AnyAsync(c => c.Phone == phone);
+    }
 }
 ```
 
@@ -126,6 +140,20 @@ Customer entity is configured in StoreDbContext with proper column mappings and 
 - **Parameters**: `email` (email to check)
 - **Response**: boolean
 
+##### GET /api/customer/by-phone/{phone}
+
+- **Description**: Get customer by phone number
+- **Authorization**: Staff, Admin
+- **Parameters**: `phone` (customer phone number)
+- **Response**: CustomerResponse
+
+##### GET /api/customer/check-phone/{phone}
+
+- **Description**: Check if phone number exists
+- **Authorization**: Staff, Admin
+- **Parameters**: `phone` (phone number to check)
+- **Response**: boolean
+
 ##### POST /api/customer
 
 - **Description**: Create new customer
@@ -163,11 +191,13 @@ Customer entity is configured in StoreDbContext with proper column mappings and 
 - Case-insensitive search
 - Partial matching support
 
-### 3. Email Validation
+### 3. Email and Phone Validation
 
 - Email uniqueness validation
+- Phone number uniqueness validation
 - Proper email format validation
-- Check for existing emails before creation/update
+- Proper phone format validation
+- Check for existing emails and phone numbers before creation/update
 
 ### 4. Authorization
 
@@ -316,6 +346,20 @@ Content-Type: application/json
   "email": "john.smith@example.com",
   "address": "456 Oak Ave, City, State"
 }
+```
+
+### Get Customer by Phone
+
+```bash
+GET /api/customer/by-phone/+1234567890
+Authorization: Bearer <jwt-token>
+```
+
+### Check Phone Number
+
+```bash
+GET /api/customer/check-phone/+1234567890
+Authorization: Bearer <jwt-token>
 ```
 
 ## Conclusion

@@ -53,6 +53,17 @@ public class CustomerService : ICustomerService
         return await _customerRepository.EmailExistsAsync(email);
     }
 
+    public async Task<CustomerResponse?> GetCustomerByPhoneAsync(string phone)
+    {
+        var customer = await _customerRepository.GetByPhoneAsync(phone);
+        return customer != null ? _mapper.Map<CustomerResponse>(customer) : null;
+    }
+
+    public async Task<bool> PhoneExistsAsync(string phone)
+    {
+        return await _customerRepository.PhoneExistsAsync(phone);
+    }
+
     public async Task<bool> CustomerExistsAsync(int customerId)
     {
         var customer = await _customerRepository.GetByIdAsync(customerId);

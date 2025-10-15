@@ -171,6 +171,69 @@ public class CustomerController : ControllerBase
     }
 
     /// <summary>
+    /// Get customer by phone number
+    /// </summary>
+    [HttpGet("by-phone/{phone}")]
+    [AuthorizeRole(UserRole.Staff, UserRole.Admin)]
+    public async Task<ActionResult<ApiResponse<CustomerResponse>>> GetCustomerByPhone(string phone)
+    {
+        try
+        {
+            var customer = await _customerService.GetCustomerByPhoneAsync(phone);
+            if (customer == null)
+            {
+                return NotFound(new ApiResponse<CustomerResponse>
+                {
+                    Success = false,
+                    Message = "Customer not found"
+                });
+            }
+
+            return Ok(new ApiResponse<CustomerResponse>
+            {
+                Success = true,
+                Data = customer,
+                Message = "Customer retrieved successfully"
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new ApiResponse<CustomerResponse>
+            {
+                Success = false,
+                Message = $"An error occurred while retrieving customer: {ex.Message}"
+            });
+        }
+    }
+
+    /// <summary>
+    /// Check if phone number exists
+    /// </summary>
+    [HttpGet("check-phone/{phone}")]
+    [AuthorizeRole(UserRole.Staff, UserRole.Admin)]
+    public async Task<ActionResult<ApiResponse<bool>>> CheckPhoneExists(string phone)
+    {
+        try
+        {
+            var exists = await _customerService.PhoneExistsAsync(phone);
+            return Ok(new ApiResponse<bool>
+            {
+                Success = true,
+                Data = exists,
+                Message = exists ? "Phone number exists" : "Phone number does not exist"
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new ApiResponse<bool>
+            {
+                Success = false,
+                Message = $"An error occurred while checking phone number: {ex.Message}"
+            });
+        }
+    }
+
+    /// <summary>
     /// Create a new customer
     /// </summary>
     [HttpPost]
@@ -186,6 +249,16 @@ public class CustomerController : ControllerBase
                 {
                     Success = false,
                     Message = "Email already exists"
+                });
+            }
+
+            // Check if phone already exists
+            if (!string.IsNullOrEmpty(request.Phone) && await _customerService.PhoneExistsAsync(request.Phone))
+            {
+                return BadRequest(new ApiResponse<CustomerResponse>
+                {
+                    Success = false,
+                    Message = "Phone number already exists"
                 });
             }
 
@@ -236,6 +309,20 @@ public class CustomerController : ControllerBase
                     {
                         Success = false,
                         Message = "Email already exists for another customer"
+                    });
+                }
+            }
+
+            // Check if phone already exists for another customer
+            if (!string.IsNullOrEmpty(request.Phone))
+            {
+                var existingCustomer = await _customerService.GetCustomerByPhoneAsync(request.Phone);
+                if (existingCustomer != null && existingCustomer.CustomerId != id)
+                {
+                    return BadRequest(new ApiResponse<CustomerResponse>
+                    {
+                        Success = false,
+                        Message = "Phone number already exists for another customer"
                     });
                 }
             }

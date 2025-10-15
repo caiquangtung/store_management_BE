@@ -22,4 +22,16 @@ public class CustomerRepository : BaseRepository<Customer>, ICustomerRepository
         return await _context.Customers
             .AnyAsync(c => c.Email == email);
     }
+
+    public async Task<Customer?> GetByPhoneAsync(string phone)
+    {
+        return await _context.Customers
+            .FirstOrDefaultAsync(c => c.Phone == phone);
+    }
+
+    public async Task<bool> PhoneExistsAsync(string phone)
+    {
+        return await _context.Customers
+            .AnyAsync(c => c.Phone == phone);
+    }
 }
