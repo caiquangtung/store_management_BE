@@ -48,6 +48,7 @@ builder.Services.AddValidatorsFromAssemblyContaining<UpdateCustomerRequestValida
 builder.Services.AddValidatorsFromAssemblyContaining<CreatePromotionRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<UpdatePromotionRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<ValidatePromotionRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateInventoryRequestValidator>();  // New for inventory
 
 // Add DbContext with connection string from appsettings
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -111,7 +112,8 @@ builder.Services.AddAutoMapper(
     typeof(StoreManagement.Application.Mappings.CategoryMappingProfile),
     typeof(StoreManagement.Application.Mappings.SupplierMappingProfile),
     typeof(StoreManagement.Application.Mappings.CustomerMappingProfile),
-    typeof(StoreManagement.Application.Mappings.PromotionMappingProfile));
+    typeof(StoreManagement.Application.Mappings.PromotionMappingProfile),
+    typeof(StoreManagement.Application.Mappings.InventoryMappingProfile));  // New for inventory
 
 // Register Application services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -121,6 +123,8 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ISupplierService, SupplierService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();  // New for inventory
+builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();  // New for inventory repository
 builder.Services.AddScoped<IRepository<Category>, CategoryRepository>();
 builder.Services.AddScoped<IRepository<Supplier>, SupplierRepository>();
 

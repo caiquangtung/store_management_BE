@@ -88,6 +88,22 @@ public class StoreDbContext : DbContext
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
+        // Configure Inventory entity (NEW: Add mapping for ProductId, Quantity, UpdatedAt)
+        modelBuilder.Entity<Inventory>(entity =>
+        {
+            entity.ToTable("inventory");
+            entity.Property(e => e.InventoryId).HasColumnName("inventory_id");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");  // Map ProductId to product_id
+            entity.Property(e => e.Quantity).HasColumnName("quantity");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            
+            // Foreign key to Product
+            entity.HasOne(e => e.Product)
+                .WithMany(e => e.Inventory)
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);  // Or SetNull if preferred
+        });
+
         // Configure other entities
         modelBuilder.Entity<Order>(entity =>
         {
@@ -128,12 +144,6 @@ public class StoreDbContext : DbContext
             entity.Property(e => e.OrderItemId).HasColumnName("order_item_id");
             entity.Property(e => e.Price).HasColumnType("decimal(10,2)");
             entity.Property(e => e.Subtotal).HasColumnType("decimal(10,2)");
-        });
-
-        modelBuilder.Entity<Inventory>(entity =>
-        {
-            entity.ToTable("inventory");
-            entity.Property(e => e.InventoryId).HasColumnName("inventory_id");
         });
 
         modelBuilder.Entity<Customer>(entity =>
