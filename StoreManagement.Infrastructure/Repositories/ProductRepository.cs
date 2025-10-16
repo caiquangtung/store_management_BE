@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using StoreManagement.Domain.Entities;
 using StoreManagement.Domain.Interfaces;
 using StoreManagement.Infrastructure.Data;
+using StoreManagement.Infrastructure.Repositories;
 
 namespace StoreManagement.Infrastructure.Repositories;
 
@@ -40,5 +41,25 @@ public class ProductRepository : BaseRepository<Product>, IProductRepository
     public async Task<bool> SKUExistsAsync(string sku)
     {
         return await _dbSet.AnyAsync(p => p.Barcode == sku);
+    }
+
+    public async Task<IEnumerable<ABCData>> GetABCAnalysisDataAsync(DateTime? fromDate = null, DateTime? toDate = null)
+    {
+        var query = from oi in _context.OrderItems
+                    join o in _context.Orders on oi.OrderId equals o.OrderId
+                    join p in _context.Products on oi.ProductId equals p.ProductId
+                    where (fromDate == null || o.OrderDate >= fromDate.Value) && (toDate == null || o.OrderDate <= toDate.Value)
+                    group new { oi, p } by p.ProductId into g
+                    select new ABCData
+                    {
+                        ProductId = g.Key,
+                        ProductName = g.First().p.ProductName,
+                        Barcode = g.First().p.Barcode,
+                        Value = g.Sum(x => x.oi.Price * x.oi.Quantity),  // SUM(price * quantity)
+                        Frequency = g.Select(x => x.oi.OrderId).Distinct().Count(),  // COUNT(DISTINCT order_id)
+                        Score = (decimal)(g.Sum(x => x.oi.Price * x.oi.Quantity) * g.Select(x => x.oi.OrderId).Distinct().Count())  // value * frequency (cast to decimal, null-safe by SUM)
+                    };
+
+        return await query.ToListAsync();
     }
 }

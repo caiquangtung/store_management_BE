@@ -1,6 +1,4 @@
 using AutoMapper;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Hosting;
 using StoreManagement.Application.DTOs.Products;
 using StoreManagement.Domain.Entities;
 using StoreManagement.Domain.Interfaces;
@@ -11,13 +9,11 @@ public class ProductService : IProductService
 {
     private readonly IProductRepository _productRepository;
     private readonly IMapper _mapper;
-    private readonly IWebHostEnvironment _environment;  // For file upload
 
-    public ProductService(IProductRepository productRepository, IMapper mapper, IWebHostEnvironment environment)
+    public ProductService(IProductRepository productRepository, IMapper mapper)
     {
         _productRepository = productRepository;
         _mapper = mapper;
-        _environment = environment;
     }
 
     public async Task<ProductResponse?> GetByIdAsync(int id)
@@ -40,17 +36,9 @@ public class ProductService : IProductService
             throw new InvalidOperationException("SKU already exists");
         }
 
-        // Handle image upload
-        string? imagePath = null;
-        if (request.Image != null)
-        {
-            imagePath = await SaveImageAsync(request.Image);
-        }
-
         // Map DTO to entity
         var product = _mapper.Map<Product>(request);
         product.CreatedAt = DateTime.UtcNow;
-        product.ImagePath = imagePath;  // Set image path
 
         // Add to repository
         var createdProduct = await _productRepository.AddAsync(product);
@@ -97,17 +85,6 @@ public class ProductService : IProductService
             product.Unit = request.Unit;
         }
 
-        // Handle image update
-        if (request.Image != null)
-        {
-            // Delete old image if exists
-            if (!string.IsNullOrEmpty(product.ImagePath))
-            {
-                await DeleteImageAsync(product.ImagePath);
-            }
-            product.ImagePath = await SaveImageAsync(request.Image);
-        }
-
         var updatedProduct = await _productRepository.UpdateAsync(product);
         await _productRepository.SaveChangesAsync();
 
@@ -122,12 +99,6 @@ public class ProductService : IProductService
             return false;
         }
 
-        // Delete image file if exists
-        if (!string.IsNullOrEmpty(product.ImagePath))
-        {
-            await DeleteImageAsync(product.ImagePath);
-        }
-
         await _productRepository.DeleteAsync(product);
         await _productRepository.SaveChangesAsync();
         return true;
@@ -138,49 +109,93 @@ public class ProductService : IProductService
         return await _productRepository.SKUExistsAsync(sku);
     }
 
-    private async Task<string?> SaveImageAsync(IFormFile image)
+    public async Task<IEnumerable<ABCProductResponse>> GetABCAnalysisAsync(DateTime? fromDate = null, DateTime? toDate = null, int pageNumber = 1, int pageSize = 10)
     {
-        if (image == null || image.Length == 0)
+        // Get raw ABC data with date filter
+        var abcData = await _productRepository.GetABCAnalysisDataAsync(fromDate, toDate);
+
+        // Filter out products with null or zero value (no sales in period)
+        var validData = abcData.Where(d => d.Value.HasValue && d.Value.Value > 0).ToList();
+
+        if (!validData.Any())
         {
-            return null;
+            return Enumerable.Empty<ABCProductResponse>();
         }
 
-        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
-        var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
-        if (!allowedExtensions.Contains(extension))
+        // Sort by score descending
+        var sortedData = validData.OrderByDescending(d => d.Score).ToList();
+
+        // Calculate total score for percentile
+        var totalScore = sortedData.Sum(d => d.Score);
+
+        // Classify A/B/C
+        var classifiedProducts = new List<ABCProductResponse>();
+        var currentIndex = 0;
+
+        // A: Top 20% by score contribution
+        var aThreshold = totalScore * 0.20m;  // Decimal literal
+        var aScore = 0m;
+        while (currentIndex < sortedData.Count && aScore < aThreshold)
         {
-            throw new InvalidOperationException("Only JPG, JPEG, PNG images are allowed.");
+            var data = sortedData[currentIndex];
+            classifiedProducts.Add(new ABCProductResponse
+            {
+                ProductId = data.ProductId,
+                ProductName = data.ProductName,
+                Barcode = data.Barcode ?? string.Empty,
+                Value = data.Value ?? 0m,
+                Frequency = data.Frequency,
+                Score = data.Score,
+                ABCClassification = "A"
+            });
+            aScore += data.Score;
+            currentIndex++;
         }
 
-        if (image.Length > 5 * 1024 * 1024)  // 5MB limit
+        // B: Next 30%
+        var bThreshold = totalScore * 0.30m;  // Decimal literal
+        var bScore = 0m;
+        while (currentIndex < sortedData.Count && bScore < bThreshold)
         {
-            throw new InvalidOperationException("Image size must be less than 5MB.");
+            var data = sortedData[currentIndex];
+            classifiedProducts.Add(new ABCProductResponse
+            {
+                ProductId = data.ProductId,
+                ProductName = data.ProductName,
+                Barcode = data.Barcode ?? string.Empty,
+                Value = data.Value ?? 0m,
+                Frequency = data.Frequency,
+                Score = data.Score,
+                ABCClassification = "B"
+            });
+            bScore += data.Score;
+            currentIndex++;
         }
 
-        var uploadsDir = Path.Combine(_environment.WebRootPath, "images/products");
-        if (!Directory.Exists(uploadsDir))
+        // C: Remaining 50%
+        while (currentIndex < sortedData.Count)
         {
-            Directory.CreateDirectory(uploadsDir);
+            var data = sortedData[currentIndex];
+            classifiedProducts.Add(new ABCProductResponse
+            {
+                ProductId = data.ProductId,
+                ProductName = data.ProductName,
+                Barcode = data.Barcode ?? string.Empty,
+                Value = data.Value ?? 0m,
+                Frequency = data.Frequency,
+                Score = data.Score,
+                ABCClassification = "C"
+            });
+            currentIndex++;
         }
 
-        var fileName = Guid.NewGuid() + extension;
-        var filePath = Path.Combine(uploadsDir, fileName);
-        var relativePath = $"/images/products/{fileName}";
+        // Apply pagination
+        var totalCount = classifiedProducts.Count;
+        var pagedItems = classifiedProducts
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
 
-        using (var stream = new FileStream(filePath, FileMode.Create))
-        {
-            await image.CopyToAsync(stream);
-        }
-
-        return relativePath;
-    }
-
-    private async Task DeleteImageAsync(string imagePath)
-    {
-        var fullPath = Path.Combine(_environment.WebRootPath, imagePath.TrimStart('/'));
-        if (File.Exists(fullPath))
-        {
-            File.Delete(fullPath);
-        }
+        return pagedItems;
     }
 }

@@ -2,7 +2,7 @@
 
 ## Tổng Quan
 
-Tài liệu này mô tả triển khai API Quản Lý Sản Phẩm (Product) cho hệ thống Store Management. API Product cung cấp đầy đủ các thao tác CRUD để quản lý thông tin sản phẩm, bao gồm upload hình ảnh, liên kết với danh mục và nhà cung cấp, cũng như kiểm tra mã vạch (SKU) duy nhất.
+Tài liệu này mô tả triển khai API Quản Lý Sản Phẩm (Product) cho hệ thống Store Management. API Product cung cấp đầy đủ các thao tác CRUD để quản lý thông tin sản phẩm, bao gồm upload hình ảnh, liên kết với danh mục và nhà cung cấp, kiểm tra mã vạch (SKU) duy nhất, và phân tích ABC để phân loại sản phẩm dựa trên doanh thu và tần suất bán.
 
 ## Kiến Trúc
 
@@ -49,6 +49,7 @@ public interface IProductRepository : IRepository<Product>
     Task<IEnumerable<Product>> GetBySupplierAsync(int supplierId);
     Task<Product?> GetBySKUAsync(string sku);
     Task<bool> SKUExistsAsync(string sku);
+    Task<IEnumerable<ABCData>> GetABCAnalysisDataAsync(DateTime? fromDate = null, DateTime? toDate = null);
 }
 ```
 
@@ -59,6 +60,7 @@ public interface IProductRepository : IRepository<Product>
 - **CreateProductRequest**: Để tạo sản phẩm mới (bao gồm upload hình ảnh qua IFormFile).
 - **UpdateProductRequest**: Để cập nhật sản phẩm hiện có (hỗ trợ upload hình ảnh mới).
 - **ProductResponse**: Để trả về thông tin sản phẩm (bao gồm đường dẫn hình ảnh).
+- **ABCProductResponse**: Để trả về kết quả phân tích ABC (với phân loại A/B/C, value, frequency, score).
 
 #### Validators
 
@@ -67,12 +69,12 @@ public interface IProductRepository : IRepository<Product>
 
 #### Dịch Vụ
 
-- **IProductService**: Giao diện định nghĩa các thao tác sản phẩm.
-- **ProductService**: Triển khai logic nghiệp vụ sản phẩm (CRUD, kiểm tra SKU, upload hình ảnh).
+- **IProductService**: Giao diện định nghĩa các thao tác sản phẩm, bao gồm ABC analysis.
+- **ProductService**: Triển khai logic nghiệp vụ sản phẩm (CRUD, kiểm tra SKU, upload hình ảnh, phân tích ABC).
 
 #### AutoMapper Profile
 
-- **ProductMappingProfile**: Ánh xạ giữa entity Product và DTOs (bao gồm ImagePath).
+- **ProductMappingProfile**: Ánh xạ giữa entity Product và DTOs (bao gồm ImagePath và ABCProductResponse).
 
 ### 3. Lớp Infrastructure
 
@@ -110,6 +112,26 @@ public class ProductRepository : BaseRepository<Product>, IProductRepository
     public async Task<bool> SKUExistsAsync(string sku)
     {
         return await _dbSet.AnyAsync(p => p.Barcode == sku);
+    }
+
+    public async Task<IEnumerable<ABCData>> GetABCAnalysisDataAsync(DateTime? fromDate = null, DateTime? toDate = null)
+    {
+        var query = from oi in _context.OrderItems
+                    join o in _context.Orders on oi.OrderId equals o.OrderId
+                    join p in _context.Products on oi.ProductId equals p.ProductId
+                    where (fromDate == null || o.OrderDate >= fromDate.Value) && (toDate == null || o.OrderDate <= toDate.Value)
+                    group new { oi, p } by p.ProductId into g
+                    select new ABCData
+                    {
+                        ProductId = g.Key,
+                        ProductName = g.First().p.ProductName,
+                        Barcode = g.First().p.Barcode,
+                        Value = g.Sum(x => x.oi.Price * x.oi.Quantity),
+                        Frequency = g.Select(x => x.oi.OrderId).Distinct().Count(),
+                        Score = (decimal)(g.Sum(x => x.oi.Price * x.oi.Quantity) * g.Select(x => x.oi.OrderId).Distinct().Count())
+                    };
+
+        return await query.ToListAsync();
     }
 }
 ```
@@ -160,6 +182,17 @@ Entity Product được cấu hình trong StoreDbContext với ánh xạ cột p
 - **Tham Số**: `id` (ID sản phẩm).
 - **Phản Hồi**: boolean
 
+##### GET /api/products/abc-analysis
+
+- **Mô Tả**: Phân tích ABC sản phẩm dựa trên doanh thu và tần suất bán (hỗ trợ filter thời gian).
+- **Phân Quyền**: Staff, Admin.
+- **Tham Số**:
+  - `fromDate` (tùy chọn, YYYY-MM-DD): Ngày bắt đầu filter.
+  - `toDate` (tùy chọn, YYYY-MM-DD): Ngày kết thúc filter.
+  - `pageNumber` (tùy chọn, mặc định: 1)
+  - `pageSize` (tùy chọn, mặc định: 10, tối đa: 100)
+- **Phản Hồi**: PagedResult<ABCProductResponse>
+
 ## Các Tính Năng Chính
 
 ### 1. Phân Trang (Pagination)
@@ -187,12 +220,19 @@ Entity Product được cấu hình trong StoreDbContext với ánh xạ cột p
 - Join eager loading với Category và Supplier khi lấy sản phẩm.
 - Validate CategoryId và SupplierId >0 khi tạo/cập nhật.
 
-### 5. Phân Quyền
+### 5. Phân Tích ABC
 
-- Kiểm soát quyền truy cập dựa trên role (AdminOrStaff cho GET, AdminOnly cho POST/PUT/DELETE).
+- Query `order_items` JOIN `orders` để tính frequency (số đơn hàng), value (tổng doanh thu), score = value * frequency.
+- Filter theo thời gian (fromDate/toDate) để phân tích theo kỳ.
+- Phân loại A (top 20% score), B (30% tiếp), C (50% còn lại).
+- Null-safe: Sử dụng `?? 0m` cho value, cast decimal trước nhân.
+
+### 6. Phân Quyền
+
+- Kiểm soát quyền truy cập dựa trên role (AdminOrStaff cho GET/ABC, AdminOnly cho POST/PUT/DELETE).
 - Sử dụng JWT Bearer Token cho xác thực.
 
-### 6. Xử Lý Lỗi
+### 7. Xử Lý Lỗi
 
 - Xử lý ngoại lệ toàn diện với GlobalExceptionMiddleware.
 - Trả về mã HTTP phù hợp và thông báo lỗi rõ ràng.
@@ -211,7 +251,7 @@ CREATE TABLE products (
     price DECIMAL(10,2) NOT NULL,
     unit VARCHAR(20) DEFAULT 'pcs',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    image_path VARCHAR(255)  -- Cột mới cho đường dẫn ảnh
+    image_path VARCHAR(255)
 );
 ```
 
@@ -238,6 +278,12 @@ CREATE TABLE products (
 
 - Tương tự CreateProductRequest, nhưng tất cả trường tùy chọn.
 
+### ABC Analysis Params
+
+- fromDate/toDate: Định dạng YYYY-MM-DD, fromDate <= toDate.
+- pageNumber: >0.
+- pageSize: 1-100.
+
 ## Đăng Ký Dịch Vụ
 
 Các dịch vụ sau được đăng ký trong DI container:
@@ -251,25 +297,25 @@ Các dịch vụ sau được đăng ký trong DI container:
 
 ### Unit Tests
 
-- Test logic dịch vụ ProductService.
-- Test truy vấn repository ProductRepository.
+- Test logic dịch vụ ProductService (CRUD, ABC phân loại).
+- Test truy vấn repository ProductRepository (join, filter date).
 - Test endpoint ProductsController.
 - Test validator.
 
 ### Integration Tests
 
-- Test luồng API hoàn chỉnh (upload ảnh, join category/supplier).
+- Test luồng API hoàn chỉnh (upload ảnh, ABC với filter date).
 - Test thao tác cơ sở dữ liệu.
 - Test chính sách phân quyền.
 
 ## Các Cải Tiến Tương Lai
 
-1. **Phân Tích ABC**: Phân loại sản phẩm A/B/C dựa trên doanh thu.
-2. **Import/Export Sản Phẩm**: Hỗ trợ bulk import từ Excel/CSV.
-3. **Tìm Kiếm Nâng Cao**: Filter theo giá, danh mục, nhà cung cấp.
-4. **Quản Lý Hình Ảnh**: Resize/thumbnail ảnh, lazy loading.
-5. **Audit Trail**: Theo dõi thay đổi sản phẩm.
-6. **Tích Hợp Với Tồn Kho**: Tự động cập nhật inventory khi thêm sản phẩm.
+1. **Import/Export Sản Phẩm**: Hỗ trợ bulk import từ Excel/CSV.
+2. **Tìm Kiếm Nâng Cao**: Filter theo giá, danh mục, nhà cung cấp, ABC class.
+3. **Quản Lý Hình Ảnh**: Resize/thumbnail ảnh, lazy loading.
+4. **Audit Trail**: Theo dõi thay đổi sản phẩm.
+5. **Tích Hợp Với Tồn Kho**: Tự động cập nhật inventory khi thêm sản phẩm.
+6. **Báo Cáo ABC**: Export báo cáo PDF/Excel với chart phân loại.
 
 ## Cấu Hình
 
@@ -346,6 +392,13 @@ GET /api/products/1
 Authorization: Bearer <jwt-token>
 ```
 
+### Phân Tích ABC Với Filter Thời Gian
+
+```bash
+GET /api/products/abc-analysis?fromDate=2025-10-01&toDate=2025-10-31&pageNumber=1&pageSize=5
+Authorization: Bearer <jwt-token>
+```
+
 ### Xóa Sản Phẩm
 
 ```bash
@@ -355,4 +408,4 @@ Authorization: Bearer <jwt-token>
 
 ## Kết Luận
 
-Triển khai API Quản Lý Sản Phẩm tuân thủ nguyên tắc Clean Architecture với sự phân tách trách nhiệm rõ ràng, validation toàn diện, phân quyền dựa trên role, và xử lý lỗi mạnh mẽ. Phân trang được xử lý ở mức controller để tối ưu hiệu suất và linh hoạt. API hỗ trợ upload hình ảnh an toàn, liên kết với danh mục/nhà cung cấp, và kiểm tra mã vạch duy nhất, phù hợp cho hệ thống quản lý bán lẻ.
+Triển khai API Quản Lý Sản Phẩm tuân thủ nguyên tắc Clean Architecture với sự phân tách trách nhiệm rõ ràng, validation toàn diện, phân quyền dựa trên role, và xử lý lỗi mạnh mẽ. Phân trang được xử lý ở mức controller để tối ưu hiệu suất và linh hoạt. API hỗ trợ upload hình ảnh an toàn, liên kết với danh mục/nhà cung cấp, kiểm tra mã vạch duy nhất, và phân tích ABC với filter thời gian, phù hợp cho hệ thống quản lý bán lẻ.

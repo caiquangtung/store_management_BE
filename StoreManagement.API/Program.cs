@@ -19,6 +19,8 @@ using AutoMapper;
 using StoreManagement.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using StoreManagement.Domain.Entities;
+using Microsoft.Extensions.FileProviders;
+using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,7 +50,7 @@ builder.Services.AddValidatorsFromAssemblyContaining<UpdateCustomerRequestValida
 builder.Services.AddValidatorsFromAssemblyContaining<CreatePromotionRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<UpdatePromotionRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<ValidatePromotionRequestValidator>();
-builder.Services.AddValidatorsFromAssemblyContaining<UpdateInventoryRequestValidator>();  // New for inventory
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateInventoryRequestValidator>();
 
 // Add DbContext with connection string from appsettings
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -113,7 +115,7 @@ builder.Services.AddAutoMapper(
     typeof(StoreManagement.Application.Mappings.SupplierMappingProfile),
     typeof(StoreManagement.Application.Mappings.CustomerMappingProfile),
     typeof(StoreManagement.Application.Mappings.PromotionMappingProfile),
-    typeof(StoreManagement.Application.Mappings.InventoryMappingProfile));  // New for inventory
+    typeof(StoreManagement.Application.Mappings.InventoryMappingProfile));
 
 // Register Application services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -123,8 +125,8 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ISupplierService, SupplierService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
-builder.Services.AddScoped<IInventoryService, InventoryService>();  // New for inventory
-builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();  // New for inventory repository
+builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
 builder.Services.AddScoped<IRepository<Category>, CategoryRepository>();
 builder.Services.AddScoped<IRepository<Supplier>, SupplierRepository>();
 
@@ -143,7 +145,13 @@ app.UseGlobalExceptionMiddleware();
 app.UseHttpsRedirection();
 
 // Add Static Files to serve images from wwwroot
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images")
+    ),
+    RequestPath = "/images"
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
