@@ -33,6 +33,33 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Add CORS
+builder.Services.AddCors(options =>
+{
+    // Get allowed origins from configuration
+    var corsSettings = builder.Configuration.GetSection("CorsSettings");
+    var allowedOrigins = corsSettings.GetSection("AllowedOrigins").Get<string[]>() ?? new string[]
+    {
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:5173",
+        "http://localhost:4200",
+        "http://localhost:8080",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+        "https://localhost:3000",
+        "https://localhost:5173"
+    };
+
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials(); // Allow cookies and authorization headers
+    });
+});
+
 // Add FluentValidation
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddFluentValidationClientsideAdapters();
@@ -141,6 +168,9 @@ if (app.Environment.IsDevelopment())
 
 // Add Global Exception Middleware (should be early in pipeline)
 app.UseGlobalExceptionMiddleware();
+
+// Add CORS (must be before UseAuthentication and UseAuthorization)
+app.UseCors("AllowFrontend");
 
 app.UseHttpsRedirection();
 
