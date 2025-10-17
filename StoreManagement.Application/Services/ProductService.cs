@@ -1,6 +1,6 @@
 using AutoMapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using StoreManagement.Application.DTOs.Products;
 using StoreManagement.Domain.Entities;
 using StoreManagement.Domain.Interfaces;
@@ -136,6 +136,96 @@ public class ProductService : IProductService
     public async Task<bool> SKUExistsAsync(string sku)
     {
         return await _productRepository.SKUExistsAsync(sku);
+    }
+
+    public async Task<IEnumerable<ABCProductResponse>> GetABCAnalysisAsync(DateTime? fromDate = null, DateTime? toDate = null, int pageNumber = 1, int pageSize = 10)
+    {
+        // Get raw ABC data with date filter
+        var abcData = await _productRepository.GetABCAnalysisDataAsync(fromDate, toDate);
+
+        // Filter out products with null or zero value (no sales in period)
+        var validData = abcData.Where(d => d.Value.HasValue && d.Value.Value > 0).ToList();
+
+        if (!validData.Any())
+        {
+            return Enumerable.Empty<ABCProductResponse>();
+        }
+
+        // Sort by score descending
+        var sortedData = validData.OrderByDescending(d => d.Score).ToList();
+
+        // Calculate total score for percentile
+        var totalScore = sortedData.Sum(d => d.Score);
+
+        // Classify A/B/C
+        var classifiedProducts = new List<ABCProductResponse>();
+        var currentIndex = 0;
+
+        // A: Top 20% by score contribution
+        var aThreshold = totalScore * 0.20m;  // Decimal literal
+        var aScore = 0m;
+        while (currentIndex < sortedData.Count && aScore < aThreshold)
+        {
+            var data = sortedData[currentIndex];
+            classifiedProducts.Add(new ABCProductResponse
+            {
+                ProductId = data.ProductId,
+                ProductName = data.ProductName,
+                Barcode = data.Barcode ?? string.Empty,
+                Value = data.Value ?? 0m,
+                Frequency = data.Frequency,
+                Score = data.Score,
+                ABCClassification = "A"
+            });
+            aScore += data.Score;
+            currentIndex++;
+        }
+
+        // B: Next 30%
+        var bThreshold = totalScore * 0.30m;  // Decimal literal
+        var bScore = 0m;
+        while (currentIndex < sortedData.Count && bScore < bThreshold)
+        {
+            var data = sortedData[currentIndex];
+            classifiedProducts.Add(new ABCProductResponse
+            {
+                ProductId = data.ProductId,
+                ProductName = data.ProductName,
+                Barcode = data.Barcode ?? string.Empty,
+                Value = data.Value ?? 0m,
+                Frequency = data.Frequency,
+                Score = data.Score,
+                ABCClassification = "B"
+            });
+            bScore += data.Score;
+            currentIndex++;
+        }
+
+        // C: Remaining 50%
+        while (currentIndex < sortedData.Count)
+        {
+            var data = sortedData[currentIndex];
+            classifiedProducts.Add(new ABCProductResponse
+            {
+                ProductId = data.ProductId,
+                ProductName = data.ProductName,
+                Barcode = data.Barcode ?? string.Empty,
+                Value = data.Value ?? 0m,
+                Frequency = data.Frequency,
+                Score = data.Score,
+                ABCClassification = "C"
+            });
+            currentIndex++;
+        }
+
+        // Apply pagination
+        var totalCount = classifiedProducts.Count;
+        var pagedItems = classifiedProducts
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        return pagedItems;
     }
 
     private async Task<string?> SaveImageAsync(IFormFile image)

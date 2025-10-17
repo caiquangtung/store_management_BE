@@ -1,0 +1,65 @@
+### Test CORS Configuration
+### This file contains HTTP requests to test CORS functionality
+
+### 1. Test OPTIONS request (Preflight)
+OPTIONS http://localhost:5000/api/auth/login HTTP/1.1
+Origin: http://localhost:3000
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: Content-Type, Authorization
+
+###
+
+### 2. Test actual POST request with CORS headers
+POST http://localhost:5000/api/auth/login HTTP/1.1
+Content-Type: application/json
+Origin: http://localhost:3000
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+###
+
+### 3. Test GET request to verify CORS
+GET http://localhost:5000/api/users HTTP/1.1
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+Origin: http://localhost:3000
+
+###
+
+### 4. Test with different origin (should fail if not in allowed list)
+POST http://localhost:5000/api/auth/login HTTP/1.1
+Content-Type: application/json
+Origin: http://localhost:9999
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+###
+
+### 5. Test with Vite development server origin
+POST http://localhost:5000/api/auth/login HTTP/1.1
+Content-Type: application/json
+Origin: http://localhost:5173
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+###
+
+### Instructions for testing:
+### 1. Start the API server: dotnet run --project StoreManagement.API
+### 2. Run these requests to verify CORS is working
+### 3. Check the response headers for Access-Control-Allow-Origin
+### 4. For request #3, replace YOUR_JWT_TOKEN_HERE with a real token from login
+
+### Expected CORS headers in response:
+### Access-Control-Allow-Origin: http://localhost:3000 (or the origin you're testing from)
+### Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+### Access-Control-Allow-Headers: Content-Type, Authorization
+### Access-Control-Allow-Credentials: true

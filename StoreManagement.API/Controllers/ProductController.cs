@@ -4,6 +4,7 @@ using StoreManagement.API.Models;
 using StoreManagement.Application.DTOs.Products;
 using StoreManagement.Application.Services;
 using System.Linq;
+using System.Globalization;
 
 namespace StoreManagement.API.Controllers;
 
@@ -144,6 +145,56 @@ public class ProductsController : ControllerBase
         {
             _logger.LogError(ex, "Error occurred while deleting product with ID {ProductId}", id);
             return StatusCode(500, ApiResponse.ErrorResponse("An error occurred while deleting product"));
+        }
+    }
+
+    [HttpGet("abc-analysis")]
+    [Authorize(Policy = "AdminOrStaff")]
+    public async Task<IActionResult> GetABCAnalysis([FromQuery] PaginationParameters pagination, [FromQuery] string? fromDate = null, [FromQuery] string? toDate = null)
+    {
+        try
+        {
+            // Parse date params null-safe
+            DateTime? fromDateParsed = null;
+            DateTime? toDateParsed = null;
+            if (!string.IsNullOrEmpty(fromDate))
+            {
+                if (DateTime.TryParse(fromDate, out var parsedFrom))
+                {
+                    fromDateParsed = parsedFrom.Date;  // Set to start of day
+                }
+                else
+                {
+                    return BadRequest(ApiResponse.ErrorResponse("Invalid fromDate format. Use YYYY-MM-DD."));
+                }
+            }
+            if (!string.IsNullOrEmpty(toDate))
+            {
+                if (DateTime.TryParse(toDate, out var parsedTo))
+                {
+                    toDateParsed = parsedTo.Date.AddDays(1).AddTicks(-1);  // Set to end of day
+                }
+                else
+                {
+                    return BadRequest(ApiResponse.ErrorResponse("Invalid toDate format. Use YYYY-MM-DD."));
+                }
+            }
+
+            // Validate fromDate <= toDate
+            if (fromDateParsed.HasValue && toDateParsed.HasValue && fromDateParsed > toDateParsed)
+            {
+                return BadRequest(ApiResponse.ErrorResponse("fromDate must be before or equal to toDate."));
+            }
+
+            var abcAnalysis = await _productService.GetABCAnalysisAsync(fromDateParsed, toDateParsed, pagination.PageNumber, pagination.PageSize);
+            var totalCount = abcAnalysis.Count();  // Or query total separately if needed
+            var pagedResult = PagedResult<ABCProductResponse>.Create(abcAnalysis, totalCount, pagination.PageNumber, pagination.PageSize);
+            return Ok(ApiResponse<PagedResult<ABCProductResponse>>.SuccessResponse(pagedResult, "ABC Analysis retrieved successfully"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred while retrieving ABC analysis");
+            return StatusCode(500, ApiResponse.ErrorResponse("An error occurred while retrieving ABC analysis"));
         }
     }
 }

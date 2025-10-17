@@ -88,16 +88,60 @@ public class StoreDbContext : DbContext
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
-        // Configure other entities
+        // Configure Inventory entity
+        modelBuilder.Entity<Inventory>(entity =>
+        {
+            entity.ToTable("inventory");
+            entity.Property(e => e.InventoryId).HasColumnName("inventory_id");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.Quantity).HasColumnName("quantity");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            
+            // Foreign key to Product
+            entity.HasOne(e => e.Product)
+                .WithMany(e => e.Inventory)
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Configure Order entity
         modelBuilder.Entity<Order>(entity =>
         {
             entity.ToTable("orders");
             entity.Property(e => e.OrderId).HasColumnName("order_id");
-            entity.Property(e => e.TotalAmount).HasColumnType("decimal(10,2)");
-            entity.Property(e => e.DiscountAmount).HasColumnType("decimal(10,2)");
-            entity.Property(e => e.Status).HasConversion<string>();
+            entity.Property(e => e.CustomerId).HasColumnName("customer_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.PromoId).HasColumnName("promo_id");
+            entity.Property(e => e.OrderDate).HasColumnName("order_date").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Status).HasColumnName("status").HasConversion<string>();
+            entity.Property(e => e.TotalAmount).HasColumnName("total_amount").HasColumnType("decimal(10,2)");
+            entity.Property(e => e.DiscountAmount).HasColumnName("discount_amount").HasColumnType("decimal(10,2)");
         });
 
+        // Configure OrderItem entity (NEW: Add mapping for OrderId, ProductId)
+        modelBuilder.Entity<OrderItem>(entity =>
+        {
+            entity.ToTable("order_items");
+            entity.Property(e => e.OrderItemId).HasColumnName("order_item_id");
+            entity.Property(e => e.OrderId).HasColumnName("order_id");  // Map OrderId to order_id
+            entity.Property(e => e.ProductId).HasColumnName("product_id");  // Map ProductId to product_id
+            entity.Property(e => e.Quantity).HasColumnName("quantity").IsRequired();
+            entity.Property(e => e.Price).HasColumnName("price").HasColumnType("decimal(10,2)").IsRequired();
+            entity.Property(e => e.Subtotal).HasColumnName("subtotal").HasColumnType("decimal(10,2)").IsRequired();
+            
+            // Foreign keys
+            entity.HasOne(e => e.Order)
+                .WithMany(e => e.OrderItems)
+                .HasForeignKey(e => e.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Product)
+                .WithMany(e => e.OrderItems)
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);  // Prevent delete product if has orders
+        });
+
+        // Configure Promotion entity
         modelBuilder.Entity<Promotion>(entity =>
         {
             entity.ToTable("promotions");
@@ -120,20 +164,6 @@ public class StoreDbContext : DbContext
             entity.Property(e => e.PaymentId).HasColumnName("payment_id");
             entity.Property(e => e.Amount).HasColumnType("decimal(10,2)");
             entity.Property(e => e.PaymentMethod).HasConversion<string>();
-        });
-
-        modelBuilder.Entity<OrderItem>(entity =>
-        {
-            entity.ToTable("order_items");
-            entity.Property(e => e.OrderItemId).HasColumnName("order_item_id");
-            entity.Property(e => e.Price).HasColumnType("decimal(10,2)");
-            entity.Property(e => e.Subtotal).HasColumnType("decimal(10,2)");
-        });
-
-        modelBuilder.Entity<Inventory>(entity =>
-        {
-            entity.ToTable("inventory");
-            entity.Property(e => e.InventoryId).HasColumnName("inventory_id");
         });
 
         modelBuilder.Entity<Customer>(entity =>
