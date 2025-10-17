@@ -65,7 +65,7 @@ public class ProductsController : ControllerBase
 
     [HttpPost]
     [Authorize(Policy = "AdminOnly")]
-    public async Task<IActionResult> CreateProduct([FromBody] CreateProductRequest request)
+    public async Task<IActionResult> CreateProduct([FromForm] CreateProductRequest request)
     {
         try
         {
@@ -98,7 +98,7 @@ public class ProductsController : ControllerBase
 
     [HttpPut("{id}")]
     [Authorize(Policy = "AdminOnly")]
-    public async Task<IActionResult> UpdateProduct(int id, [FromBody] UpdateProductRequest request)
+    public async Task<IActionResult> UpdateProduct(int id, [FromForm] UpdateProductRequest request)
     {
         try
         {

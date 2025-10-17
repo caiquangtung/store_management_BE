@@ -1,4 +1,6 @@
 using AutoMapper;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using StoreManagement.Application.DTOs.Products;
 using StoreManagement.Domain.Entities;
 using StoreManagement.Domain.Interfaces;
@@ -9,11 +11,13 @@ public class ProductService : IProductService
 {
     private readonly IProductRepository _productRepository;
     private readonly IMapper _mapper;
+    private readonly IWebHostEnvironment _environment;  // For file upload
 
-    public ProductService(IProductRepository productRepository, IMapper mapper)
+    public ProductService(IProductRepository productRepository, IMapper mapper, IWebHostEnvironment environment)
     {
         _productRepository = productRepository;
         _mapper = mapper;
+        _environment = environment;
     }
 
     public async Task<ProductResponse?> GetByIdAsync(int id)
@@ -36,9 +40,17 @@ public class ProductService : IProductService
             throw new InvalidOperationException("SKU already exists");
         }
 
+        // Handle image upload
+        string? imagePath = null;
+        if (request.Image != null)
+        {
+            imagePath = await SaveImageAsync(request.Image);
+        }
+
         // Map DTO to entity
         var product = _mapper.Map<Product>(request);
         product.CreatedAt = DateTime.UtcNow;
+        product.ImagePath = imagePath;  // Set image path
 
         // Add to repository
         var createdProduct = await _productRepository.AddAsync(product);
@@ -85,6 +97,17 @@ public class ProductService : IProductService
             product.Unit = request.Unit;
         }
 
+        // Handle image update
+        if (request.Image != null)
+        {
+            // Delete old image if exists
+            if (!string.IsNullOrEmpty(product.ImagePath))
+            {
+                await DeleteImageAsync(product.ImagePath);
+            }
+            product.ImagePath = await SaveImageAsync(request.Image);
+        }
+
         var updatedProduct = await _productRepository.UpdateAsync(product);
         await _productRepository.SaveChangesAsync();
 
@@ -97,6 +120,12 @@ public class ProductService : IProductService
         if (product == null)
         {
             return false;
+        }
+
+        // Delete image file if exists
+        if (!string.IsNullOrEmpty(product.ImagePath))
+        {
+            await DeleteImageAsync(product.ImagePath);
         }
 
         await _productRepository.DeleteAsync(product);
@@ -197,5 +226,51 @@ public class ProductService : IProductService
             .ToList();
 
         return pagedItems;
+    }
+
+    private async Task<string?> SaveImageAsync(IFormFile image)
+    {
+        if (image == null || image.Length == 0)
+        {
+            return null;
+        }
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+        var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
+        if (!allowedExtensions.Contains(extension))
+        {
+            throw new InvalidOperationException("Only JPG, JPEG, PNG images are allowed.");
+        }
+
+        if (image.Length > 5 * 1024 * 1024)  // 5MB limit
+        {
+            throw new InvalidOperationException("Image size must be less than 5MB.");
+        }
+
+        var uploadsDir = Path.Combine(_environment.WebRootPath, "images/products");
+        if (!Directory.Exists(uploadsDir))
+        {
+            Directory.CreateDirectory(uploadsDir);
+        }
+
+        var fileName = Guid.NewGuid() + extension;
+        var filePath = Path.Combine(uploadsDir, fileName);
+        var relativePath = $"/images/products/{fileName}";
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await image.CopyToAsync(stream);
+        }
+
+        return relativePath;
+    }
+
+    private async Task DeleteImageAsync(string imagePath)
+    {
+        var fullPath = Path.Combine(_environment.WebRootPath, imagePath.TrimStart('/'));
+        if (File.Exists(fullPath))
+        {
+            File.Delete(fullPath);
+        }
     }
 }
