@@ -35,12 +35,12 @@ public class ProductService : IProductService
 
     public async Task<(IEnumerable<ProductResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize)
     {
-        // Get paged data from repository with ordering by name
+        // Get paged data from repository with ordering by product name
         var (items, totalCount) = await _productRepository.GetPagedAsync(
             pageNumber,
             pageSize,
             null, // no filter
-            query => query.OrderBy(p => p.Name));
+            query => query.OrderBy(p => p.ProductName));
 
         // Map to response DTOs
         var mappedItems = _mapper.Map<IEnumerable<ProductResponse>>(items);
