@@ -26,14 +26,10 @@ public class InventoryController : ControllerBase
     {
         try
         {
-            var inventories = await _inventoryService.GetAllAsync();
-            var totalCount = inventories.Count();
-            var items = inventories
-                .Skip(pagination.Skip)
-                .Take(pagination.PageSize)
-                .ToList();
+            var (inventories, totalCount) = await _inventoryService.GetAllPagedAsync(
+                pagination.PageNumber, pagination.PageSize);
 
-            var pagedResult = PagedResult<InventoryResponse>.Create(items, totalCount, pagination.PageNumber, pagination.PageSize);
+            var pagedResult = PagedResult<InventoryResponse>.Create(inventories, totalCount, pagination.PageNumber, pagination.PageSize);
             return Ok(ApiResponse<PagedResult<InventoryResponse>>.SuccessResponse(pagedResult, "Inventory retrieved successfully"));
         }
         catch (Exception ex)

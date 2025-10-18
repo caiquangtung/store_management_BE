@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using StoreManagement.Application.DTOs.Products;
 using StoreManagement.Domain.Entities;
 using StoreManagement.Domain.Interfaces;
+using System.Linq.Expressions;
 
 namespace StoreManagement.Application.Services;
 
@@ -30,6 +31,21 @@ public class ProductService : IProductService
     {
         var products = await _productRepository.GetAllAsync();
         return _mapper.Map<IEnumerable<ProductResponse>>(products);
+    }
+
+    public async Task<(IEnumerable<ProductResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize)
+    {
+        // Get paged data from repository with ordering by name
+        var (items, totalCount) = await _productRepository.GetPagedAsync(
+            pageNumber,
+            pageSize,
+            null, // no filter
+            query => query.OrderBy(p => p.Name));
+
+        // Map to response DTOs
+        var mappedItems = _mapper.Map<IEnumerable<ProductResponse>>(items);
+
+        return (mappedItems, totalCount);
     }
 
     public async Task<ProductResponse?> CreateAsync(CreateProductRequest request)

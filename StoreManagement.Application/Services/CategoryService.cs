@@ -28,6 +28,18 @@ public class CategoryService : ICategoryService
         return _mapper.Map<IEnumerable<CategoryResponse>>(categories);
     }
 
+    public async Task<(IEnumerable<CategoryResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize)
+    {
+        var (items, totalCount) = await _categoryRepository.GetPagedAsync(
+            pageNumber,
+            pageSize,
+            null,
+            query => query.OrderBy(c => c.CategoryName));
+
+        var mappedItems = _mapper.Map<IEnumerable<CategoryResponse>>(items);
+        return (mappedItems, totalCount);
+    }
+
     public async Task<CategoryResponse?> CreateAsync(CreateCategoryRequest request)
     {
         var category = _mapper.Map<Category>(request);

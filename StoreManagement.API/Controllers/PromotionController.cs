@@ -23,28 +23,16 @@ public class PromotionController : ControllerBase
     [HttpGet]
     [Authorize(Policy = "AdminOrStaff")]
     public async Task<ActionResult<ApiResponse<PagedResult<PromotionResponse>>>> GetPromotions(
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 10,
+        [FromQuery] PaginationParameters pagination,
         [FromQuery] string? searchTerm = null)
     {
         try
         {
-            // Validate pagination parameters
-            if (pageNumber < 1) pageNumber = 1;
-            if (pageSize < 1 || pageSize > 100) pageSize = 10;
-
             // Get paged promotions from service with database-level pagination
             var (promotions, totalCount) = await _promotionService.GetPromotionsPagedAsync(
-                pageNumber, pageSize, searchTerm);
+                pagination.PageNumber, pagination.PageSize, searchTerm);
 
-            // Create paged result
-            var pagedResult = new PagedResult<PromotionResponse>
-            {
-                Items = promotions,
-                TotalCount = totalCount,
-                PageNumber = pageNumber,
-                PageSize = pageSize
-            };
+            var pagedResult = PagedResult<PromotionResponse>.Create(promotions, totalCount, pagination.PageNumber, pagination.PageSize);
 
             return Ok(new ApiResponse<PagedResult<PromotionResponse>>
             {

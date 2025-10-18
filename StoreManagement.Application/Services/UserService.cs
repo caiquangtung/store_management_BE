@@ -37,6 +37,18 @@ public class UserService : IUserService
         return _mapper.Map<IEnumerable<UserResponse>>(users);
     }
 
+    public async Task<(IEnumerable<UserResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize)
+    {
+        var (items, totalCount) = await _userRepository.GetPagedAsync(
+            pageNumber,
+            pageSize,
+            null,
+            query => query.OrderBy(u => u.Username));
+
+        var mappedItems = _mapper.Map<IEnumerable<UserResponse>>(items);
+        return (mappedItems, totalCount);
+    }
+
     public async Task<UserResponse?> CreateAsync(CreateUserRequest request)
     {
         // Check if username already exists

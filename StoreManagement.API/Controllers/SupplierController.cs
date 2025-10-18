@@ -26,14 +26,10 @@ public class SuppliersController : ControllerBase
     {
         try
         {
-            var suppliers = await _supplierService.GetAllAsync();
-            var totalCount = suppliers.Count();
-            var items = suppliers
-                .Skip(pagination.Skip)
-                .Take(pagination.PageSize)
-                .ToList();
+            var (suppliers, totalCount) = await _supplierService.GetAllPagedAsync(
+                pagination.PageNumber, pagination.PageSize);
 
-            var pagedResult = PagedResult<SupplierResponse>.Create(items, totalCount, pagination.PageNumber, pagination.PageSize);
+            var pagedResult = PagedResult<SupplierResponse>.Create(suppliers, totalCount, pagination.PageNumber, pagination.PageSize);
             return Ok(ApiResponse<PagedResult<SupplierResponse>>.SuccessResponse(pagedResult, "Suppliers retrieved successfully"));
         }
         catch (Exception ex)

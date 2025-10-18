@@ -27,14 +27,11 @@ public class ProductsController : ControllerBase
     {
         try
         {
-            var products = await _productService.GetAllAsync();
-            var totalCount = products.Count();
-            var items = products
-                .Skip(pagination.Skip)
-                .Take(pagination.PageSize)
-                .ToList();
+            // Get paged products from service with database-level pagination
+            var (products, totalCount) = await _productService.GetAllPagedAsync(
+                pagination.PageNumber, pagination.PageSize);
 
-            var pagedResult = PagedResult<ProductResponse>.Create(items, totalCount, pagination.PageNumber, pagination.PageSize);
+            var pagedResult = PagedResult<ProductResponse>.Create(products, totalCount, pagination.PageNumber, pagination.PageSize);
             return Ok(ApiResponse<PagedResult<ProductResponse>>.SuccessResponse(pagedResult, "Products retrieved successfully"));
         }
         catch (Exception ex)

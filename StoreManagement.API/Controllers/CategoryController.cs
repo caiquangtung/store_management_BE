@@ -26,14 +26,10 @@ public class CategoriesController : ControllerBase
     {
         try
         {
-            var categories = await _categoryService.GetAllAsync();
-            var totalCount = categories.Count();
-            var items = categories
-                .Skip(pagination.Skip)
-                .Take(pagination.PageSize)
-                .ToList();
+            var (categories, totalCount) = await _categoryService.GetAllPagedAsync(
+                pagination.PageNumber, pagination.PageSize);
 
-            var pagedResult = PagedResult<CategoryResponse>.Create(items, totalCount, pagination.PageNumber, pagination.PageSize);
+            var pagedResult = PagedResult<CategoryResponse>.Create(categories, totalCount, pagination.PageNumber, pagination.PageSize);
             return Ok(ApiResponse<PagedResult<CategoryResponse>>.SuccessResponse(pagedResult, "Categories retrieved successfully"));
         }
         catch (Exception ex)

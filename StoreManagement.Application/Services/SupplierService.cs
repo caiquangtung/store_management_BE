@@ -28,6 +28,18 @@ public class SupplierService : ISupplierService
         return _mapper.Map<IEnumerable<SupplierResponse>>(suppliers);
     }
 
+    public async Task<(IEnumerable<SupplierResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize)
+    {
+        var (items, totalCount) = await _supplierRepository.GetPagedAsync(
+            pageNumber,
+            pageSize,
+            null,
+            query => query.OrderBy(s => s.Name));
+
+        var mappedItems = _mapper.Map<IEnumerable<SupplierResponse>>(items);
+        return (mappedItems, totalCount);
+    }
+
     public async Task<SupplierResponse?> CreateAsync(CreateSupplierRequest request)
     {
         var supplier = _mapper.Map<Supplier>(request);

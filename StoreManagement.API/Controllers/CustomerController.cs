@@ -23,28 +23,16 @@ public class CustomerController : ControllerBase
     [HttpGet]
     [Authorize(Policy = "AdminOrStaff")]
     public async Task<ActionResult<ApiResponse<PagedResult<CustomerResponse>>>> GetCustomers(
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 10,
+        [FromQuery] PaginationParameters pagination,
         [FromQuery] string? searchTerm = null)
     {
         try
         {
-            // Validate pagination parameters
-            if (pageNumber < 1) pageNumber = 1;
-            if (pageSize < 1 || pageSize > 100) pageSize = 10;
-
             // Get paged customers from service with database-level pagination
             var (customers, totalCount) = await _customerService.GetCustomersPagedAsync(
-                pageNumber, pageSize, searchTerm);
+                pagination.PageNumber, pagination.PageSize, searchTerm);
 
-            // Create paged result
-            var pagedResult = new PagedResult<CustomerResponse>
-            {
-                Items = customers,
-                TotalCount = totalCount,
-                PageNumber = pageNumber,
-                PageSize = pageSize
-            };
+            var pagedResult = PagedResult<CustomerResponse>.Create(customers, totalCount, pagination.PageNumber, pagination.PageSize);
 
             return Ok(new ApiResponse<PagedResult<CustomerResponse>>
             {

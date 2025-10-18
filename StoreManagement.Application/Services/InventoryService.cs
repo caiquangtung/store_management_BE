@@ -28,6 +28,20 @@ public class InventoryService : IInventoryService
         return _mapper.Map<IEnumerable<InventoryResponse>>(inventories);
     }
 
+    public async Task<(IEnumerable<InventoryResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize)
+    {
+        // Note: For inventory we might want to use GetAllWithProductAsync for includes
+        // But for pagination we'll use base GetPagedAsync and the mapper should handle navigation properties
+        var (items, totalCount) = await _inventoryRepository.GetPagedAsync(
+            pageNumber,
+            pageSize,
+            null,
+            query => query.OrderBy(i => i.ProductId));
+
+        var mappedItems = _mapper.Map<IEnumerable<InventoryResponse>>(items);
+        return (mappedItems, totalCount);
+    }
+
     public async Task<InventoryResponse?> CreateAsync(CreateInventoryRequest request)
     {
         // Validate: Product must exist (assume checked in controller/validator)

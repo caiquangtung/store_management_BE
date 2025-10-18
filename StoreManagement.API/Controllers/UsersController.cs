@@ -34,15 +34,10 @@ public class UsersController : ControllerBase
     {
         try
         {
-            var users = await _userService.GetAllAsync();
+            var (users, totalCount) = await _userService.GetAllPagedAsync(
+                pagination.PageNumber, pagination.PageSize);
 
-            var totalCount = users.Count();
-            var items = users
-                .Skip(pagination.Skip)
-                .Take(pagination.PageSize)
-                .ToList();
-
-            var pagedResult = PagedResult<UserResponse>.Create(items, totalCount, pagination.PageNumber, pagination.PageSize);
+            var pagedResult = PagedResult<UserResponse>.Create(users, totalCount, pagination.PageNumber, pagination.PageSize);
 
             return Ok(ApiResponse<PagedResult<UserResponse>>.SuccessResponse(pagedResult, "Users retrieved successfully"));
         }
