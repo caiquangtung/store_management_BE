@@ -2,6 +2,7 @@ using AutoMapper;
 using StoreManagement.Application.DTOs.Inventory;
 using StoreManagement.Domain.Entities;
 using StoreManagement.Domain.Interfaces;
+using System.Linq.Expressions;
 
 namespace StoreManagement.Application.Services;
 
@@ -28,14 +29,21 @@ public class InventoryService : IInventoryService
         return _mapper.Map<IEnumerable<InventoryResponse>>(inventories);
     }
 
-    public async Task<(IEnumerable<InventoryResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize)
+    public async Task<(IEnumerable<InventoryResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, int? productId = null)
     {
+        // Build filter expression
+        Expression<Func<Inventory, bool>>? filter = null;
+        if (productId.HasValue)
+        {
+            filter = i => i.ProductId == productId.Value;
+        }
+
         // Note: For inventory we might want to use GetAllWithProductAsync for includes
         // But for pagination we'll use base GetPagedAsync and the mapper should handle navigation properties
         var (items, totalCount) = await _inventoryRepository.GetPagedAsync(
             pageNumber,
             pageSize,
-            null,
+            filter,
             query => query.OrderBy(i => i.ProductId));
 
         var mappedItems = _mapper.Map<IEnumerable<InventoryResponse>>(items);

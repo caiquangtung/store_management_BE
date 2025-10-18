@@ -22,12 +22,14 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAllCategories([FromQuery] PaginationParameters pagination)
+    public async Task<IActionResult> GetAllCategories(
+        [FromQuery] PaginationParameters pagination,
+        [FromQuery] string? searchTerm = null)
     {
         try
         {
             var (categories, totalCount) = await _categoryService.GetAllPagedAsync(
-                pagination.PageNumber, pagination.PageSize);
+                pagination.PageNumber, pagination.PageSize, searchTerm);
 
             var pagedResult = PagedResult<CategoryResponse>.Create(categories, totalCount, pagination.PageNumber, pagination.PageSize);
             return Ok(ApiResponse<PagedResult<CategoryResponse>>.SuccessResponse(pagedResult, "Categories retrieved successfully"));

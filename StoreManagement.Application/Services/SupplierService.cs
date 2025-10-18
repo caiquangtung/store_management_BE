@@ -2,6 +2,7 @@ using AutoMapper;
 using StoreManagement.Application.DTOs.Suppliers;
 using StoreManagement.Domain.Entities;
 using StoreManagement.Domain.Interfaces;
+using System.Linq.Expressions;
 
 namespace StoreManagement.Application.Services;
 
@@ -28,12 +29,21 @@ public class SupplierService : ISupplierService
         return _mapper.Map<IEnumerable<SupplierResponse>>(suppliers);
     }
 
-    public async Task<(IEnumerable<SupplierResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize)
+    public async Task<(IEnumerable<SupplierResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, string? searchTerm = null)
     {
+        // Build filter expression
+        Expression<Func<Supplier, bool>>? filter = null;
+        if (!string.IsNullOrEmpty(searchTerm))
+        {
+            filter = s => s.Name.Contains(searchTerm) ||
+                         (s.Email != null && s.Email.Contains(searchTerm)) ||
+                         (s.Phone != null && s.Phone.Contains(searchTerm));
+        }
+
         var (items, totalCount) = await _supplierRepository.GetPagedAsync(
             pageNumber,
             pageSize,
-            null,
+            filter,
             query => query.OrderBy(s => s.Name));
 
         var mappedItems = _mapper.Map<IEnumerable<SupplierResponse>>(items);

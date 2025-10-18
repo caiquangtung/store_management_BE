@@ -33,13 +33,21 @@ public class ProductService : IProductService
         return _mapper.Map<IEnumerable<ProductResponse>>(products);
     }
 
-    public async Task<(IEnumerable<ProductResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize)
+    public async Task<(IEnumerable<ProductResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, string? searchTerm = null)
     {
+        // Build filter expression
+        Expression<Func<Product, bool>>? filter = null;
+        if (!string.IsNullOrEmpty(searchTerm))
+        {
+            filter = p => p.ProductName.Contains(searchTerm) ||
+                         (p.Barcode != null && p.Barcode.Contains(searchTerm));
+        }
+
         // Get paged data from repository with ordering by product name
         var (items, totalCount) = await _productRepository.GetPagedAsync(
             pageNumber,
             pageSize,
-            null, // no filter
+            filter,
             query => query.OrderBy(p => p.ProductName));
 
         // Map to response DTOs

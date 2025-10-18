@@ -4,6 +4,7 @@ using StoreManagement.Application.DTOs.Users;
 using StoreManagement.Application.Services;
 using StoreManagement.API.Models;
 using StoreManagement.API.Attributes;
+using StoreManagement.Domain.Enums;
 using System.Linq;
 
 namespace StoreManagement.API.Controllers;
@@ -30,12 +31,15 @@ public class UsersController : ControllerBase
     /// <returns>Paged list of users</returns>
     [HttpGet]
     [Authorize(Policy = "AdminOrStaff")]
-    public async Task<IActionResult> GetAllUsers([FromQuery] PaginationParameters pagination)
+    public async Task<IActionResult> GetAllUsers(
+        [FromQuery] PaginationParameters pagination,
+        [FromQuery] UserRole? role = null,
+        [FromQuery] string? searchTerm = null)
     {
         try
         {
             var (users, totalCount) = await _userService.GetAllPagedAsync(
-                pagination.PageNumber, pagination.PageSize);
+                pagination.PageNumber, pagination.PageSize, role, searchTerm);
 
             var pagedResult = PagedResult<UserResponse>.Create(users, totalCount, pagination.PageNumber, pagination.PageSize);
 

@@ -3,6 +3,8 @@ using StoreManagement.Application.Common.Interfaces;
 using StoreManagement.Application.DTOs.Users;
 using StoreManagement.Domain.Entities;
 using StoreManagement.Domain.Interfaces;
+using StoreManagement.Domain.Enums;
+using System.Linq.Expressions;
 
 namespace StoreManagement.Application.Services;
 
@@ -37,12 +39,34 @@ public class UserService : IUserService
         return _mapper.Map<IEnumerable<UserResponse>>(users);
     }
 
-    public async Task<(IEnumerable<UserResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize)
+    public async Task<(IEnumerable<UserResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, UserRole? role = null, string? searchTerm = null)
     {
+        // Build filter expression
+        Expression<Func<User, bool>>? filter = null;
+
+        if (role.HasValue && !string.IsNullOrEmpty(searchTerm))
+        {
+            // Both filters: role AND search
+            filter = u => u.Role == role.Value &&
+                         (u.Username.Contains(searchTerm) ||
+                          (u.FullName != null && u.FullName.Contains(searchTerm)));
+        }
+        else if (role.HasValue)
+        {
+            // Only role filter
+            filter = u => u.Role == role.Value;
+        }
+        else if (!string.IsNullOrEmpty(searchTerm))
+        {
+            // Only search filter
+            filter = u => u.Username.Contains(searchTerm) ||
+                         (u.FullName != null && u.FullName.Contains(searchTerm));
+        }
+
         var (items, totalCount) = await _userRepository.GetPagedAsync(
             pageNumber,
             pageSize,
-            null,
+            filter,
             query => query.OrderBy(u => u.Username));
 
         var mappedItems = _mapper.Map<IEnumerable<UserResponse>>(items);

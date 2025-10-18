@@ -2,6 +2,7 @@ using AutoMapper;
 using StoreManagement.Application.DTOs.Categories;
 using StoreManagement.Domain.Entities;
 using StoreManagement.Domain.Interfaces;
+using System.Linq.Expressions;
 
 namespace StoreManagement.Application.Services;
 
@@ -28,12 +29,19 @@ public class CategoryService : ICategoryService
         return _mapper.Map<IEnumerable<CategoryResponse>>(categories);
     }
 
-    public async Task<(IEnumerable<CategoryResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize)
+    public async Task<(IEnumerable<CategoryResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, string? searchTerm = null)
     {
+        // Build filter expression
+        Expression<Func<Category, bool>>? filter = null;
+        if (!string.IsNullOrEmpty(searchTerm))
+        {
+            filter = c => c.CategoryName.Contains(searchTerm);
+        }
+
         var (items, totalCount) = await _categoryRepository.GetPagedAsync(
             pageNumber,
             pageSize,
-            null,
+            filter,
             query => query.OrderBy(c => c.CategoryName));
 
         var mappedItems = _mapper.Map<IEnumerable<CategoryResponse>>(items);

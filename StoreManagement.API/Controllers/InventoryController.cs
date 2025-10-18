@@ -22,12 +22,14 @@ public class InventoryController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAllInventory([FromQuery] PaginationParameters pagination)
+    public async Task<IActionResult> GetAllInventory(
+        [FromQuery] PaginationParameters pagination,
+        [FromQuery] int? productId = null)
     {
         try
         {
             var (inventories, totalCount) = await _inventoryService.GetAllPagedAsync(
-                pagination.PageNumber, pagination.PageSize);
+                pagination.PageNumber, pagination.PageSize, productId);
 
             var pagedResult = PagedResult<InventoryResponse>.Create(inventories, totalCount, pagination.PageNumber, pagination.PageSize);
             return Ok(ApiResponse<PagedResult<InventoryResponse>>.SuccessResponse(pagedResult, "Inventory retrieved successfully"));
