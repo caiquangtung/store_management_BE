@@ -148,4 +148,21 @@ public class UserService : IUserService
     {
         return await _userRepository.UsernameExistsAsync(username);
     }
+
+    public async Task<UserCountByRoleResponse> GetUserCountByRoleAsync()
+    {
+        var users = await _userRepository.GetAllAsync();
+
+        var roleCounts = users
+            .GroupBy(u => u.Role)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        var totalCount = users.Count();
+
+        return new UserCountByRoleResponse
+        {
+            RoleCounts = roleCounts,
+            TotalCount = totalCount
+        };
+    }
 }

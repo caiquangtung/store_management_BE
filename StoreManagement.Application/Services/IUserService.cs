@@ -15,4 +15,5 @@ public interface IUserService
     Task<UserResponse?> UpdateAsync(int id, UpdateUserRequest request);
     Task<bool> DeleteAsync(int id);
     Task<bool> UsernameExistsAsync(string username);
+    Task<UserCountByRoleResponse> GetUserCountByRoleAsync();
 }

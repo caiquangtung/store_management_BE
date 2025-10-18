@@ -195,4 +195,24 @@ public class UsersController : ControllerBase
             return StatusCode(500, ApiResponse.ErrorResponse("An error occurred while checking username"));
         }
     }
+
+    /// <summary>
+    /// Get user count statistics by role (Admin and Staff only)
+    /// </summary>
+    /// <returns>User count by role statistics</returns>
+    [HttpGet("count-by-role")]
+    [Authorize(Policy = "AdminOrStaff")]
+    public async Task<IActionResult> GetUserCountByRole()
+    {
+        try
+        {
+            var statistics = await _userService.GetUserCountByRoleAsync();
+            return Ok(ApiResponse<UserCountByRoleResponse>.SuccessResponse(statistics, "User count by role retrieved successfully"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred while retrieving user count by role");
+            return StatusCode(500, ApiResponse.ErrorResponse("An error occurred while retrieving user count by role"));
+        }
+    }
 }
