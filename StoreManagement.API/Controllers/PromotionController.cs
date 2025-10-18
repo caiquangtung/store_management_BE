@@ -89,12 +89,12 @@ public class PromotionController : ControllerBase
                 Message = "Promotion retrieved successfully"
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, new ApiResponse<PromotionResponse>
             {
                 Success = false,
-                Message = $"An error occurred while retrieving promotion: {ex.Message}"
+                Message = "An error occurred while retrieving promotion"
             });
         }
     }
@@ -125,12 +125,12 @@ public class PromotionController : ControllerBase
                 Message = "Promotion retrieved successfully"
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, new ApiResponse<PromotionResponse>
             {
                 Success = false,
-                Message = $"An error occurred while retrieving promotion: {ex.Message}"
+                Message = "An error occurred while retrieving promotion"
             });
         }
     }
@@ -152,12 +152,12 @@ public class PromotionController : ControllerBase
                 Message = "Active promotions retrieved successfully"
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, new ApiResponse<IEnumerable<PromotionResponse>>
             {
                 Success = false,
-                Message = $"An error occurred while retrieving active promotions: {ex.Message}"
+                Message = "An error occurred while retrieving active promotions"
             });
         }
     }
@@ -179,12 +179,12 @@ public class PromotionController : ControllerBase
                 Message = exists ? "Promo code exists" : "Promo code does not exist"
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, new ApiResponse<bool>
             {
                 Success = false,
-                Message = $"An error occurred while checking promo code: {ex.Message}"
+                Message = "An error occurred while checking promo code"
             });
         }
     }
@@ -206,12 +206,12 @@ public class PromotionController : ControllerBase
                 Message = validationResult.IsValid ? "Promotion is valid" : "Promotion validation failed"
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, new ApiResponse<PromotionValidationResponse>
             {
                 Success = false,
-                Message = $"An error occurred while validating promotion: {ex.Message}"
+                Message = "An error occurred while validating promotion"
             });
         }
     }
@@ -243,12 +243,12 @@ public class PromotionController : ControllerBase
                 Message = "Discount calculated successfully"
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, new ApiResponse<decimal>
             {
                 Success = false,
-                Message = $"An error occurred while calculating discount: {ex.Message}"
+                Message = "An error occurred while calculating discount"
             });
         }
     }
@@ -280,12 +280,12 @@ public class PromotionController : ControllerBase
                 Message = "Promotion created successfully"
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, new ApiResponse<PromotionResponse>
             {
                 Success = false,
-                Message = $"An error occurred while creating promotion: {ex.Message}"
+                Message = "An error occurred while creating promotion"
             });
         }
     }
@@ -328,12 +328,12 @@ public class PromotionController : ControllerBase
                 Message = "Promotion updated successfully"
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, new ApiResponse<PromotionResponse>
             {
                 Success = false,
-                Message = $"An error occurred while updating promotion: {ex.Message}"
+                Message = "An error occurred while updating promotion"
             });
         }
     }
@@ -364,12 +364,12 @@ public class PromotionController : ControllerBase
                 Message = "Promotion deleted successfully"
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, new ApiResponse<bool>
             {
                 Success = false,
-                Message = $"An error occurred while deleting promotion: {ex.Message}"
+                Message = "An error occurred while deleting promotion"
             });
         }
     }
@@ -391,12 +391,12 @@ public class PromotionController : ControllerBase
                 Message = "Expired promotions deactivated successfully"
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, new ApiResponse<bool>
             {
                 Success = false,
-                Message = $"An error occurred while deactivating expired promotions: {ex.Message}"
+                Message = "An error occurred while deactivating expired promotions"
             });
         }
     }

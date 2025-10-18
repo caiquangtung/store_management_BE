@@ -89,12 +89,12 @@ public class CustomerController : ControllerBase
                 Message = "Customer retrieved successfully"
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, new ApiResponse<CustomerResponse>
             {
                 Success = false,
-                Message = $"An error occurred while retrieving customer: {ex.Message}"
+                Message = "An error occurred while retrieving customer"
             });
         }
     }
@@ -125,12 +125,12 @@ public class CustomerController : ControllerBase
                 Message = "Customer retrieved successfully"
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, new ApiResponse<CustomerResponse>
             {
                 Success = false,
-                Message = $"An error occurred while retrieving customer: {ex.Message}"
+                Message = "An error occurred while retrieving customer"
             });
         }
     }
@@ -152,12 +152,12 @@ public class CustomerController : ControllerBase
                 Message = exists ? "Email exists" : "Email does not exist"
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, new ApiResponse<bool>
             {
                 Success = false,
-                Message = $"An error occurred while checking email: {ex.Message}"
+                Message = "An error occurred while checking email"
             });
         }
     }
@@ -188,12 +188,12 @@ public class CustomerController : ControllerBase
                 Message = "Customer retrieved successfully"
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, new ApiResponse<CustomerResponse>
             {
                 Success = false,
-                Message = $"An error occurred while retrieving customer: {ex.Message}"
+                Message = "An error occurred while retrieving customer"
             });
         }
     }
@@ -215,12 +215,12 @@ public class CustomerController : ControllerBase
                 Message = exists ? "Phone number exists" : "Phone number does not exist"
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, new ApiResponse<bool>
             {
                 Success = false,
-                Message = $"An error occurred while checking phone number: {ex.Message}"
+                Message = "An error occurred while checking phone number"
             });
         }
     }
@@ -262,12 +262,12 @@ public class CustomerController : ControllerBase
                 Message = "Customer created successfully"
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, new ApiResponse<CustomerResponse>
             {
                 Success = false,
-                Message = $"An error occurred while creating customer: {ex.Message}"
+                Message = "An error occurred while creating customer"
             });
         }
     }
@@ -327,12 +327,12 @@ public class CustomerController : ControllerBase
                 Message = "Customer updated successfully"
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, new ApiResponse<CustomerResponse>
             {
                 Success = false,
-                Message = $"An error occurred while updating customer: {ex.Message}"
+                Message = "An error occurred while updating customer"
             });
         }
     }
@@ -363,12 +363,12 @@ public class CustomerController : ControllerBase
                 Message = "Customer deleted successfully"
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, new ApiResponse<bool>
             {
                 Success = false,
-                Message = $"An error occurred while deleting customer: {ex.Message}"
+                Message = "An error occurred while deleting customer"
             });
         }
     }

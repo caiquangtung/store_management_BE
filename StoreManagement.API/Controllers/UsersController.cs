@@ -13,7 +13,6 @@ namespace StoreManagement.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-[Authorize] // Require authentication for all endpoints
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
