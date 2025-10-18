@@ -33,21 +33,14 @@ public class PromotionController : ControllerBase
             if (pageNumber < 1) pageNumber = 1;
             if (pageSize < 1 || pageSize > 100) pageSize = 10;
 
-            // Get all promotions from service
-            var allPromotions = await _promotionService.GetPromotionsAsync(searchTerm);
-            var promotionsList = allPromotions.ToList();
-
-            // Apply pagination
-            var totalCount = promotionsList.Count;
-            var paginatedPromotions = promotionsList
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
+            // Get paged promotions from service with database-level pagination
+            var (promotions, totalCount) = await _promotionService.GetPromotionsPagedAsync(
+                pageNumber, pageSize, searchTerm);
 
             // Create paged result
             var pagedResult = new PagedResult<PromotionResponse>
             {
-                Items = paginatedPromotions,
+                Items = promotions,
                 TotalCount = totalCount,
                 PageNumber = pageNumber,
                 PageSize = pageSize
@@ -60,12 +53,12 @@ public class PromotionController : ControllerBase
                 Message = "Promotions retrieved successfully"
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, new ApiResponse<PagedResult<PromotionResponse>>
             {
                 Success = false,
-                Message = $"An error occurred while retrieving promotions: {ex.Message}"
+                Message = "An error occurred while retrieving promotions"
             });
         }
     }

@@ -33,21 +33,14 @@ public class CustomerController : ControllerBase
             if (pageNumber < 1) pageNumber = 1;
             if (pageSize < 1 || pageSize > 100) pageSize = 10;
 
-            // Get all customers from service
-            var allCustomers = await _customerService.GetCustomersAsync(searchTerm);
-            var customersList = allCustomers.ToList();
-
-            // Apply pagination
-            var totalCount = customersList.Count;
-            var paginatedCustomers = customersList
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
+            // Get paged customers from service with database-level pagination
+            var (customers, totalCount) = await _customerService.GetCustomersPagedAsync(
+                pageNumber, pageSize, searchTerm);
 
             // Create paged result
             var pagedResult = new PagedResult<CustomerResponse>
             {
-                Items = paginatedCustomers,
+                Items = customers,
                 TotalCount = totalCount,
                 PageNumber = pageNumber,
                 PageSize = pageSize
@@ -60,12 +53,12 @@ public class CustomerController : ControllerBase
                 Message = "Customers retrieved successfully"
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, new ApiResponse<PagedResult<CustomerResponse>>
             {
                 Success = false,
-                Message = $"An error occurred while retrieving customers: {ex.Message}"
+                Message = "An error occurred while retrieving customers"
             });
         }
     }

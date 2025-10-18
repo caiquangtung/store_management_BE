@@ -3,6 +3,7 @@ using StoreManagement.Application.Common.Interfaces;
 using StoreManagement.Application.DTOs.Customer;
 using StoreManagement.Domain.Entities;
 using StoreManagement.Domain.Interfaces;
+using System.Linq.Expressions;
 
 namespace StoreManagement.Application.Services;
 
@@ -34,6 +35,31 @@ public class CustomerService : ICustomerService
         }
 
         return _mapper.Map<IEnumerable<CustomerResponse>>(customers.OrderBy(c => c.Name));
+    }
+
+    public async Task<(IEnumerable<CustomerResponse> Items, int TotalCount)> GetCustomersPagedAsync(
+        int pageNumber, int pageSize, string? searchTerm = null)
+    {
+        // Build filter expression
+        Expression<Func<Customer, bool>>? filter = null;
+        if (!string.IsNullOrEmpty(searchTerm))
+        {
+            filter = c => c.Name.Contains(searchTerm) ||
+                         (c.Email != null && c.Email.Contains(searchTerm)) ||
+                         (c.Phone != null && c.Phone.Contains(searchTerm));
+        }
+
+        // Get paged data from repository with ordering
+        var (items, totalCount) = await _customerRepository.GetPagedAsync(
+            pageNumber,
+            pageSize,
+            filter,
+            query => query.OrderBy(c => c.Name));
+
+        // Map to response DTOs
+        var mappedItems = _mapper.Map<IEnumerable<CustomerResponse>>(items);
+
+        return (mappedItems, totalCount);
     }
 
     public async Task<CustomerResponse?> GetCustomerByIdAsync(int customerId)

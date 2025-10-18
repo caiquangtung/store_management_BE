@@ -7,6 +7,8 @@ namespace StoreManagement.Application.Services;
 public interface IPromotionService
 {
     Task<IEnumerable<PromotionResponse>> GetPromotionsAsync(string? searchTerm = null);
+    Task<(IEnumerable<PromotionResponse> Items, int TotalCount)> GetPromotionsPagedAsync(
+        int pageNumber, int pageSize, string? searchTerm = null);
     Task<PromotionResponse?> GetPromotionByIdAsync(int promotionId);
     Task<PromotionResponse?> GetPromotionByCodeAsync(string promoCode);
     Task<IEnumerable<PromotionResponse>> GetActivePromotionsAsync();
