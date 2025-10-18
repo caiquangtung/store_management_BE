@@ -1,9 +1,8 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StoreManagement.Application.DTOs.Promotion;
 using StoreManagement.Application.Services;
 using StoreManagement.API.Models;
-using StoreManagement.API.Attributes;
-using StoreManagement.Domain.Enums;
 
 namespace StoreManagement.API.Controllers;
 
@@ -22,7 +21,7 @@ public class PromotionController : ControllerBase
     /// Get all promotions with pagination and search
     /// </summary>
     [HttpGet]
-    [AuthorizeRole(UserRole.Staff, UserRole.Admin)]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<ActionResult<ApiResponse<PagedResult<PromotionResponse>>>> GetPromotions(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10,
@@ -75,7 +74,7 @@ public class PromotionController : ControllerBase
     /// Get promotion by ID
     /// </summary>
     [HttpGet("{id}")]
-    [AuthorizeRole(UserRole.Staff, UserRole.Admin)]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<ActionResult<ApiResponse<PromotionResponse>>> GetPromotion(int id)
     {
         try
@@ -111,7 +110,7 @@ public class PromotionController : ControllerBase
     /// Get promotion by promo code
     /// </summary>
     [HttpGet("by-code/{promoCode}")]
-    [AuthorizeRole(UserRole.Staff, UserRole.Admin)]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<ActionResult<ApiResponse<PromotionResponse>>> GetPromotionByCode(string promoCode)
     {
         try
@@ -147,7 +146,7 @@ public class PromotionController : ControllerBase
     /// Get active promotions
     /// </summary>
     [HttpGet("active")]
-    [AuthorizeRole(UserRole.Staff, UserRole.Admin)]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<ActionResult<ApiResponse<IEnumerable<PromotionResponse>>>> GetActivePromotions()
     {
         try
@@ -174,7 +173,7 @@ public class PromotionController : ControllerBase
     /// Check if promo code exists
     /// </summary>
     [HttpGet("check-code/{promoCode}")]
-    [AuthorizeRole(UserRole.Staff, UserRole.Admin)]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<ActionResult<ApiResponse<bool>>> CheckPromoCodeExists(string promoCode)
     {
         try
@@ -201,7 +200,7 @@ public class PromotionController : ControllerBase
     /// Validate promotion
     /// </summary>
     [HttpPost("validate")]
-    [AuthorizeRole(UserRole.Staff, UserRole.Admin)]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<ActionResult<ApiResponse<PromotionValidationResponse>>> ValidatePromotion([FromBody] ValidatePromotionRequest request)
     {
         try
@@ -228,7 +227,7 @@ public class PromotionController : ControllerBase
     /// Calculate discount amount
     /// </summary>
     [HttpPost("calculate-discount")]
-    [AuthorizeRole(UserRole.Staff, UserRole.Admin)]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<ActionResult<ApiResponse<decimal>>> CalculateDiscount([FromBody] ValidatePromotionRequest request)
     {
         try
@@ -265,7 +264,7 @@ public class PromotionController : ControllerBase
     /// Create a new promotion
     /// </summary>
     [HttpPost]
-    [AuthorizeRole(UserRole.Admin)]
+    [Authorize(Policy = "AdminOnly")]
     public async Task<ActionResult<ApiResponse<PromotionResponse>>> CreatePromotion([FromBody] CreatePromotionRequest request)
     {
         try
@@ -302,7 +301,7 @@ public class PromotionController : ControllerBase
     /// Update an existing promotion
     /// </summary>
     [HttpPut("{id}")]
-    [AuthorizeRole(UserRole.Admin)]
+    [Authorize(Policy = "AdminOnly")]
     public async Task<ActionResult<ApiResponse<PromotionResponse>>> UpdatePromotion(int id, [FromBody] UpdatePromotionRequest request)
     {
         try
@@ -350,7 +349,7 @@ public class PromotionController : ControllerBase
     /// Delete a promotion
     /// </summary>
     [HttpDelete("{id}")]
-    [AuthorizeRole(UserRole.Admin)]
+    [Authorize(Policy = "AdminOnly")]
     public async Task<ActionResult<ApiResponse<bool>>> DeletePromotion(int id)
     {
         try
@@ -386,7 +385,7 @@ public class PromotionController : ControllerBase
     /// Deactivate expired promotions
     /// </summary>
     [HttpPost("deactivate-expired")]
-    [AuthorizeRole(UserRole.Admin)]
+    [Authorize(Policy = "AdminOnly")]
     public async Task<ActionResult<ApiResponse<bool>>> DeactivateExpiredPromotions()
     {
         try

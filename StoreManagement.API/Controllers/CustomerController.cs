@@ -1,9 +1,8 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StoreManagement.Application.DTOs.Customer;
 using StoreManagement.Application.Services;
 using StoreManagement.API.Models;
-using StoreManagement.API.Attributes;
-using StoreManagement.Domain.Enums;
 
 namespace StoreManagement.API.Controllers;
 
@@ -22,7 +21,7 @@ public class CustomerController : ControllerBase
     /// Get all customers with pagination and search
     /// </summary>
     [HttpGet]
-    [AuthorizeRole(UserRole.Staff, UserRole.Admin)]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<ActionResult<ApiResponse<PagedResult<CustomerResponse>>>> GetCustomers(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10,
@@ -75,7 +74,7 @@ public class CustomerController : ControllerBase
     /// Get customer by ID
     /// </summary>
     [HttpGet("{id}")]
-    [AuthorizeRole(UserRole.Staff, UserRole.Admin)]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<ActionResult<ApiResponse<CustomerResponse>>> GetCustomer(int id)
     {
         try
@@ -111,7 +110,7 @@ public class CustomerController : ControllerBase
     /// Get customer by email
     /// </summary>
     [HttpGet("by-email/{email}")]
-    [AuthorizeRole(UserRole.Staff, UserRole.Admin)]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<ActionResult<ApiResponse<CustomerResponse>>> GetCustomerByEmail(string email)
     {
         try
@@ -147,7 +146,7 @@ public class CustomerController : ControllerBase
     /// Check if email exists
     /// </summary>
     [HttpGet("check-email/{email}")]
-    [AuthorizeRole(UserRole.Staff, UserRole.Admin)]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<ActionResult<ApiResponse<bool>>> CheckEmailExists(string email)
     {
         try
@@ -174,7 +173,7 @@ public class CustomerController : ControllerBase
     /// Get customer by phone number
     /// </summary>
     [HttpGet("by-phone/{phone}")]
-    [AuthorizeRole(UserRole.Staff, UserRole.Admin)]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<ActionResult<ApiResponse<CustomerResponse>>> GetCustomerByPhone(string phone)
     {
         try
@@ -210,7 +209,7 @@ public class CustomerController : ControllerBase
     /// Check if phone number exists
     /// </summary>
     [HttpGet("check-phone/{phone}")]
-    [AuthorizeRole(UserRole.Staff, UserRole.Admin)]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<ActionResult<ApiResponse<bool>>> CheckPhoneExists(string phone)
     {
         try
@@ -237,7 +236,7 @@ public class CustomerController : ControllerBase
     /// Create a new customer
     /// </summary>
     [HttpPost]
-    [AuthorizeRole(UserRole.Staff, UserRole.Admin)]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<ActionResult<ApiResponse<CustomerResponse>>> CreateCustomer([FromBody] CreateCustomerRequest request)
     {
         try
@@ -284,7 +283,7 @@ public class CustomerController : ControllerBase
     /// Update an existing customer
     /// </summary>
     [HttpPut("{id}")]
-    [AuthorizeRole(UserRole.Staff, UserRole.Admin)]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<ActionResult<ApiResponse<CustomerResponse>>> UpdateCustomer(int id, [FromBody] UpdateCustomerRequest request)
     {
         try
@@ -349,7 +348,7 @@ public class CustomerController : ControllerBase
     /// Delete a customer
     /// </summary>
     [HttpDelete("{id}")]
-    [AuthorizeRole(UserRole.Admin)]
+    [Authorize(Policy = "AdminOnly")]
     public async Task<ActionResult<ApiResponse<bool>>> DeleteCustomer(int id)
     {
         try
