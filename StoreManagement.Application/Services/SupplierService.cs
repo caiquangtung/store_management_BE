@@ -29,7 +29,7 @@ public class SupplierService : ISupplierService
         return _mapper.Map<IEnumerable<SupplierResponse>>(suppliers);
     }
 
-    public async Task<(IEnumerable<SupplierResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, string? searchTerm = null)
+    public async Task<(IEnumerable<SupplierResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, string? searchTerm = null, string? sortBy = null, bool sortDesc = false)
     {
         // Build filter expression
         Expression<Func<Supplier, bool>>? filter = null;
@@ -40,11 +40,25 @@ public class SupplierService : ISupplierService
                          (s.Phone != null && s.Phone.Contains(searchTerm));
         }
 
+        Expression<Func<Supplier, object>> primarySort = (sortBy ?? string.Empty).ToLower() switch
+        {
+            "id" => s => s.SupplierId,
+            "name" => s => s.Name,
+            "email" => s => s.Email ?? string.Empty,
+            _ => s => s.SupplierId
+        };
+
+        Func<IQueryable<Supplier>, IOrderedQueryable<Supplier>> orderBy = q =>
+        {
+            var ordered = sortDesc ? q.OrderByDescending(primarySort) : q.OrderBy(primarySort);
+            return sortDesc ? ordered.ThenByDescending(s => s.SupplierId) : ordered.ThenBy(s => s.SupplierId);
+        };
+
         var (items, totalCount) = await _supplierRepository.GetPagedAsync(
             pageNumber,
             pageSize,
             filter,
-            query => query.OrderBy(s => s.Name));
+            orderBy);
 
         var mappedItems = _mapper.Map<IEnumerable<SupplierResponse>>(items);
         return (mappedItems, totalCount);

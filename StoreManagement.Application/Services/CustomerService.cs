@@ -38,7 +38,7 @@ public class CustomerService : ICustomerService
     }
 
     public async Task<(IEnumerable<CustomerResponse> Items, int TotalCount)> GetCustomersPagedAsync(
-        int pageNumber, int pageSize, string? searchTerm = null)
+        int pageNumber, int pageSize, string? searchTerm = null, string? sortBy = null, bool sortDesc = false)
     {
         // Build filter expression
         Expression<Func<Customer, bool>>? filter = null;
@@ -49,12 +49,26 @@ public class CustomerService : ICustomerService
                          (c.Phone != null && c.Phone.Contains(searchTerm));
         }
 
-        // Get paged data from repository with ordering
+        Expression<Func<Customer, object>> primarySort = (sortBy ?? string.Empty).ToLower() switch
+        {
+            "id" => c => c.CustomerId,
+            "name" => c => c.Name,
+            "email" => c => c.Email ?? string.Empty,
+            "phone" => c => c.Phone ?? string.Empty,
+            _ => c => c.CustomerId
+        };
+
+        Func<IQueryable<Customer>, IOrderedQueryable<Customer>> orderBy = q =>
+        {
+            var ordered = sortDesc ? q.OrderByDescending(primarySort) : q.OrderBy(primarySort);
+            return sortDesc ? ordered.ThenByDescending(c => c.CustomerId) : ordered.ThenBy(c => c.CustomerId);
+        };
+
         var (items, totalCount) = await _customerRepository.GetPagedAsync(
             pageNumber,
             pageSize,
             filter,
-            query => query.OrderBy(c => c.Name));
+            orderBy);
 
         // Map to response DTOs
         var mappedItems = _mapper.Map<IEnumerable<CustomerResponse>>(items);

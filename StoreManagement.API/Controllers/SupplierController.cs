@@ -24,12 +24,14 @@ public class SuppliersController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAllSuppliers(
         [FromQuery] PaginationParameters pagination,
-        [FromQuery] string? searchTerm = null)
+        [FromQuery] string? searchTerm = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] bool sortDesc = false)
     {
         try
         {
             var (suppliers, totalCount) = await _supplierService.GetAllPagedAsync(
-                pagination.PageNumber, pagination.PageSize, searchTerm);
+                pagination.PageNumber, pagination.PageSize, searchTerm, sortBy, sortDesc);
 
             var pagedResult = PagedResult<SupplierResponse>.Create(suppliers, totalCount, pagination.PageNumber, pagination.PageSize);
             return Ok(ApiResponse<PagedResult<SupplierResponse>>.SuccessResponse(pagedResult, "Suppliers retrieved successfully"));

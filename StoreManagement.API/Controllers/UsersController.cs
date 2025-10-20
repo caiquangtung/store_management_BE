@@ -34,12 +34,14 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> GetAllUsers(
         [FromQuery] PaginationParameters pagination,
         [FromQuery] UserRole? role = null,
-        [FromQuery] string? searchTerm = null)
+        [FromQuery] string? searchTerm = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] bool sortDesc = false)
     {
         try
         {
             var (users, totalCount) = await _userService.GetAllPagedAsync(
-                pagination.PageNumber, pagination.PageSize, role, searchTerm);
+                pagination.PageNumber, pagination.PageSize, role, searchTerm, sortBy, sortDesc);
 
             var pagedResult = PagedResult<UserResponse>.Create(users, totalCount, pagination.PageNumber, pagination.PageSize);
 

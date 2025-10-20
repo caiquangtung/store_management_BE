@@ -7,7 +7,7 @@ public interface ICustomerService
 {
     Task<IEnumerable<CustomerResponse>> GetCustomersAsync(string? searchTerm = null);
     Task<(IEnumerable<CustomerResponse> Items, int TotalCount)> GetCustomersPagedAsync(
-        int pageNumber, int pageSize, string? searchTerm = null);
+        int pageNumber, int pageSize, string? searchTerm = null, string? sortBy = null, bool sortDesc = false);
     Task<CustomerResponse?> GetCustomerByIdAsync(int customerId);
     Task<CustomerResponse?> GetCustomerByEmailAsync(string email);
     Task<bool> EmailExistsAsync(string email);

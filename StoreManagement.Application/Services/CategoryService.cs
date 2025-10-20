@@ -29,7 +29,7 @@ public class CategoryService : ICategoryService
         return _mapper.Map<IEnumerable<CategoryResponse>>(categories);
     }
 
-    public async Task<(IEnumerable<CategoryResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, string? searchTerm = null)
+    public async Task<(IEnumerable<CategoryResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, string? searchTerm = null, string? sortBy = null, bool sortDesc = false)
     {
         // Build filter expression
         Expression<Func<Category, bool>>? filter = null;
@@ -38,11 +38,24 @@ public class CategoryService : ICategoryService
             filter = c => c.CategoryName.Contains(searchTerm);
         }
 
+        Expression<Func<Category, object>> primarySort = (sortBy ?? string.Empty).ToLower() switch
+        {
+            "id" => c => c.CategoryId,
+            "name" or "categoryname" => c => c.CategoryName,
+            _ => c => c.CategoryId
+        };
+
+        Func<IQueryable<Category>, IOrderedQueryable<Category>> orderBy = q =>
+        {
+            var ordered = sortDesc ? q.OrderByDescending(primarySort) : q.OrderBy(primarySort);
+            return sortDesc ? ordered.ThenByDescending(c => c.CategoryId) : ordered.ThenBy(c => c.CategoryId);
+        };
+
         var (items, totalCount) = await _categoryRepository.GetPagedAsync(
             pageNumber,
             pageSize,
             filter,
-            query => query.OrderBy(c => c.CategoryName));
+            orderBy);
 
         var mappedItems = _mapper.Map<IEnumerable<CategoryResponse>>(items);
         return (mappedItems, totalCount);

@@ -39,7 +39,7 @@ public class UserService : IUserService
         return _mapper.Map<IEnumerable<UserResponse>>(users);
     }
 
-    public async Task<(IEnumerable<UserResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, UserRole? role = null, string? searchTerm = null)
+    public async Task<(IEnumerable<UserResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, UserRole? role = null, string? searchTerm = null, string? sortBy = null, bool sortDesc = false)
     {
         // Build filter expression
         Expression<Func<User, bool>>? filter = null;
@@ -63,11 +63,28 @@ public class UserService : IUserService
                          (u.FullName != null && u.FullName.Contains(searchTerm));
         }
 
+        // Build order expression with whitelist and stable tie-breaker by UserId
+        Expression<Func<User, object>> primarySort = (sortBy ?? string.Empty).ToLower() switch
+        {
+            "id" => u => u.UserId,
+            "username" => u => u.Username,
+            "fullname" => u => u.FullName ?? string.Empty,
+            "role" => u => u.Role,
+            _ => u => u.UserId
+        };
+
+        Func<IQueryable<User>, IOrderedQueryable<User>> orderBy = q =>
+        {
+            var ordered = sortDesc ? q.OrderByDescending(primarySort) : q.OrderBy(primarySort);
+            // Tie-breaker for stable pagination
+            return sortDesc ? ordered.ThenByDescending(u => u.UserId) : ordered.ThenBy(u => u.UserId);
+        };
+
         var (items, totalCount) = await _userRepository.GetPagedAsync(
             pageNumber,
             pageSize,
             filter,
-            query => query.OrderBy(u => u.Username));
+            orderBy);
 
         var mappedItems = _mapper.Map<IEnumerable<UserResponse>>(items);
         return (mappedItems, totalCount);

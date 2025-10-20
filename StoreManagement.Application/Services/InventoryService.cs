@@ -29,7 +29,7 @@ public class InventoryService : IInventoryService
         return _mapper.Map<IEnumerable<InventoryResponse>>(inventories);
     }
 
-    public async Task<(IEnumerable<InventoryResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, int? productId = null)
+    public async Task<(IEnumerable<InventoryResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, int? productId = null, string? sortBy = null, bool sortDesc = false)
     {
         // Build filter expression
         Expression<Func<Inventory, bool>>? filter = null;
@@ -40,11 +40,25 @@ public class InventoryService : IInventoryService
 
         // Note: For inventory we might want to use GetAllWithProductAsync for includes
         // But for pagination we'll use base GetPagedAsync and the mapper should handle navigation properties
+        Expression<Func<Inventory, object>> primarySort = (sortBy ?? string.Empty).ToLower() switch
+        {
+            "id" => i => i.InventoryId,
+            "productid" => i => i.ProductId,
+            "quantity" => i => i.Quantity,
+            _ => i => i.InventoryId
+        };
+
+        Func<IQueryable<Inventory>, IOrderedQueryable<Inventory>> orderBy = q =>
+        {
+            var ordered = sortDesc ? q.OrderByDescending(primarySort) : q.OrderBy(primarySort);
+            return sortDesc ? ordered.ThenByDescending(i => i.InventoryId) : ordered.ThenBy(i => i.InventoryId);
+        };
+
         var (items, totalCount) = await _inventoryRepository.GetPagedAsync(
             pageNumber,
             pageSize,
             filter,
-            query => query.OrderBy(i => i.ProductId));
+            orderBy);
 
         var mappedItems = _mapper.Map<IEnumerable<InventoryResponse>>(items);
         return (mappedItems, totalCount);

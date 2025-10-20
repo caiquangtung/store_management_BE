@@ -8,7 +8,7 @@ public interface IPromotionService
 {
     Task<IEnumerable<PromotionResponse>> GetPromotionsAsync(string? searchTerm = null);
     Task<(IEnumerable<PromotionResponse> Items, int TotalCount)> GetPromotionsPagedAsync(
-        int pageNumber, int pageSize, string? searchTerm = null);
+        int pageNumber, int pageSize, string? searchTerm = null, string? sortBy = null, bool sortDesc = false);
     Task<PromotionResponse?> GetPromotionByIdAsync(int promotionId);
     Task<PromotionResponse?> GetPromotionByCodeAsync(string promoCode);
     Task<IEnumerable<PromotionResponse>> GetActivePromotionsAsync();

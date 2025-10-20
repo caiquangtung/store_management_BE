@@ -39,7 +39,7 @@ public class PromotionService : IPromotionService
     }
 
     public async Task<(IEnumerable<PromotionResponse> Items, int TotalCount)> GetPromotionsPagedAsync(
-        int pageNumber, int pageSize, string? searchTerm = null)
+        int pageNumber, int pageSize, string? searchTerm = null, string? sortBy = null, bool sortDesc = false)
     {
         // Build filter expression
         Expression<Func<Promotion, bool>>? filter = null;
@@ -49,12 +49,28 @@ public class PromotionService : IPromotionService
                          (p.Description != null && p.Description.Contains(searchTerm));
         }
 
-        // Get paged data from repository with ordering
+        // Build order expression with whitelist and stable tie-breaker by PromoId
+        Expression<Func<Promotion, object>> primarySort = (sortBy ?? string.Empty).ToLower() switch
+        {
+            "id" or "promoid" => p => p.PromoId,
+            "code" or "promocode" => p => p.PromoCode,
+            "startdate" => p => p.StartDate,
+            "enddate" => p => p.EndDate,
+            "status" => p => p.Status,
+            _ => p => p.PromoId
+        };
+
+        Func<IQueryable<Promotion>, IOrderedQueryable<Promotion>> orderBy = q =>
+        {
+            var ordered = sortDesc ? q.OrderByDescending(primarySort) : q.OrderBy(primarySort);
+            return sortDesc ? ordered.ThenByDescending(p => p.PromoId) : ordered.ThenBy(p => p.PromoId);
+        };
+
         var (items, totalCount) = await _promotionRepository.GetPagedAsync(
             pageNumber,
             pageSize,
             filter,
-            query => query.OrderByDescending(p => p.StartDate));
+            orderBy);
 
         // Map to response DTOs
         var mappedItems = _mapper.Map<IEnumerable<PromotionResponse>>(items);
