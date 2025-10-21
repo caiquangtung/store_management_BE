@@ -66,11 +66,25 @@ public class InventoryService : IInventoryService
 
     public async Task<InventoryResponse?> CreateAsync(CreateInventoryRequest request)
     {
-        // Validate: Product must exist (assume checked in controller/validator)
-        var inventory = _mapper.Map<Inventory>(request);
-        var createdInventory = await _inventoryRepository.AddAsync(inventory);
+        // Upsert logic: Check if entry exists for product_id, update if yes, create if no
+        var existingInventory = await _inventoryRepository.GetByProductIdAsync(request.ProductId);
+        Inventory inventory;
+
+        if (existingInventory != null)
+        {
+            // Update existing: Add to current quantity (additive for restock)
+            existingInventory.Quantity += request.Quantity;
+            inventory = await _inventoryRepository.UpdateAsync(existingInventory);
+        }
+        else
+        {
+            // Create new entry
+            inventory = _mapper.Map<Inventory>(request);
+            inventory = await _inventoryRepository.AddAsync(inventory);
+        }
+
         await _inventoryRepository.SaveChangesAsync();
-        return _mapper.Map<InventoryResponse>(createdInventory);
+        return _mapper.Map<InventoryResponse>(inventory);
     }
 
     public async Task<InventoryResponse?> UpdateAsync(int id, UpdateInventoryRequest request)

@@ -41,9 +41,16 @@ public class InventoryRepository : BaseRepository<Inventory>, IInventoryReposito
                 .ThenInclude(p => p.Category)
             .Include(i => i.Product)
                 .ThenInclude(p => p.Supplier)
-            .Where(i => i.Quantity < threshold && i.Quantity > 0)  // Only active stock
+            .Where(i => i.Quantity < threshold && i.Quantity >= 0)  // Only active stock
             .OrderBy(i => i.Quantity)  // Lowest first
             .ToListAsync();
+    }
+
+    public async Task<Inventory?> GetByProductIdAsync(int productId)
+    {
+        return await _dbSet
+            .Include(i => i.Product)
+            .FirstOrDefaultAsync(i => i.ProductId == productId);
     }
 
     // Override GetPagedAsync to include Product navigation properties
