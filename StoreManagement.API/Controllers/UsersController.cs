@@ -4,6 +4,7 @@ using StoreManagement.Application.DTOs.Users;
 using StoreManagement.Application.Services;
 using StoreManagement.API.Models;
 using StoreManagement.API.Attributes;
+using StoreManagement.Domain.Enums;
 using System.Linq;
 
 namespace StoreManagement.API.Controllers;
@@ -13,7 +14,6 @@ namespace StoreManagement.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-[Authorize] // Require authentication for all endpoints
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
@@ -31,19 +31,19 @@ public class UsersController : ControllerBase
     /// <returns>Paged list of users</returns>
     [HttpGet]
     [Authorize(Policy = "AdminOrStaff")]
-    public async Task<IActionResult> GetAllUsers([FromQuery] PaginationParameters pagination)
+    public async Task<IActionResult> GetAllUsers(
+        [FromQuery] PaginationParameters pagination,
+        [FromQuery] UserRole? role = null,
+        [FromQuery] string? searchTerm = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] bool sortDesc = false)
     {
         try
         {
-            var users = await _userService.GetAllAsync();
+            var (users, totalCount) = await _userService.GetAllPagedAsync(
+                pagination.PageNumber, pagination.PageSize, role, searchTerm, sortBy, sortDesc);
 
-            var totalCount = users.Count();
-            var items = users
-                .Skip(pagination.Skip)
-                .Take(pagination.PageSize)
-                .ToList();
-
-            var pagedResult = PagedResult<UserResponse>.Create(items, totalCount, pagination.PageNumber, pagination.PageSize);
+            var pagedResult = PagedResult<UserResponse>.Create(users, totalCount, pagination.PageNumber, pagination.PageSize);
 
             return Ok(ApiResponse<PagedResult<UserResponse>>.SuccessResponse(pagedResult, "Users retrieved successfully"));
         }
@@ -195,6 +195,26 @@ public class UsersController : ControllerBase
         {
             _logger.LogError(ex, "Error occurred while checking username {Username}", username);
             return StatusCode(500, ApiResponse.ErrorResponse("An error occurred while checking username"));
+        }
+    }
+
+    /// <summary>
+    /// Get user count statistics by role (Admin and Staff only)
+    /// </summary>
+    /// <returns>User count by role statistics</returns>
+    [HttpGet("count-by-role")]
+    [Authorize(Policy = "AdminOrStaff")]
+    public async Task<IActionResult> GetUserCountByRole()
+    {
+        try
+        {
+            var statistics = await _userService.GetUserCountByRoleAsync();
+            return Ok(ApiResponse<UserCountByRoleResponse>.SuccessResponse(statistics, "User count by role retrieved successfully"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred while retrieving user count by role");
+            return StatusCode(500, ApiResponse.ErrorResponse("An error occurred while retrieving user count by role"));
         }
     }
 }

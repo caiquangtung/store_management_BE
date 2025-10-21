@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using StoreManagement.Application.DTOs.Products;
 using StoreManagement.Domain.Entities;
 using StoreManagement.Domain.Interfaces;
+using System.Linq.Expressions;
 
 namespace StoreManagement.Application.Services;
 
@@ -30,6 +31,44 @@ public class ProductService : IProductService
     {
         var products = await _productRepository.GetAllAsync();
         return _mapper.Map<IEnumerable<ProductResponse>>(products);
+    }
+
+    public async Task<(IEnumerable<ProductResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, string? searchTerm = null, string? sortBy = null, bool sortDesc = false)
+    {
+        // Build filter expression
+        Expression<Func<Product, bool>>? filter = null;
+        if (!string.IsNullOrEmpty(searchTerm))
+        {
+            filter = p => p.ProductName.Contains(searchTerm) ||
+                         (p.Barcode != null && p.Barcode.Contains(searchTerm));
+        }
+
+        // Build order expression with whitelist and stable tie-breaker by ProductId
+        Expression<Func<Product, object>> primarySort = (sortBy ?? string.Empty).ToLower() switch
+        {
+            "id" => p => p.ProductId,
+            "name" or "productname" => p => p.ProductName,
+            "price" => p => p.Price,
+            "createdat" => p => p.CreatedAt,
+            _ => p => p.ProductId
+        };
+
+        Func<IQueryable<Product>, IOrderedQueryable<Product>> orderBy = q =>
+        {
+            var ordered = sortDesc ? q.OrderByDescending(primarySort) : q.OrderBy(primarySort);
+            return sortDesc ? ordered.ThenByDescending(p => p.ProductId) : ordered.ThenBy(p => p.ProductId);
+        };
+
+        var (items, totalCount) = await _productRepository.GetPagedAsync(
+            pageNumber,
+            pageSize,
+            filter,
+            orderBy);
+
+        // Map to response DTOs
+        var mappedItems = _mapper.Map<IEnumerable<ProductResponse>>(items);
+
+        return (mappedItems, totalCount);
     }
 
     public async Task<ProductResponse?> CreateAsync(CreateProductRequest request)

@@ -3,6 +3,7 @@ using StoreManagement.Application.Common.Interfaces;
 using StoreManagement.Application.DTOs.Customer;
 using StoreManagement.Domain.Entities;
 using StoreManagement.Domain.Interfaces;
+using System.Linq.Expressions;
 
 namespace StoreManagement.Application.Services;
 
@@ -34,6 +35,45 @@ public class CustomerService : ICustomerService
         }
 
         return _mapper.Map<IEnumerable<CustomerResponse>>(customers.OrderBy(c => c.Name));
+    }
+
+    public async Task<(IEnumerable<CustomerResponse> Items, int TotalCount)> GetCustomersPagedAsync(
+        int pageNumber, int pageSize, string? searchTerm = null, string? sortBy = null, bool sortDesc = false)
+    {
+        // Build filter expression
+        Expression<Func<Customer, bool>>? filter = null;
+        if (!string.IsNullOrEmpty(searchTerm))
+        {
+            filter = c => c.Name.Contains(searchTerm) ||
+                         (c.Email != null && c.Email.Contains(searchTerm)) ||
+                         (c.Phone != null && c.Phone.Contains(searchTerm));
+        }
+
+        Expression<Func<Customer, object>> primarySort = (sortBy ?? string.Empty).ToLower() switch
+        {
+            "id" => c => c.CustomerId,
+            "name" => c => c.Name,
+            "email" => c => c.Email ?? string.Empty,
+            "phone" => c => c.Phone ?? string.Empty,
+            _ => c => c.CustomerId
+        };
+
+        Func<IQueryable<Customer>, IOrderedQueryable<Customer>> orderBy = q =>
+        {
+            var ordered = sortDesc ? q.OrderByDescending(primarySort) : q.OrderBy(primarySort);
+            return sortDesc ? ordered.ThenByDescending(c => c.CustomerId) : ordered.ThenBy(c => c.CustomerId);
+        };
+
+        var (items, totalCount) = await _customerRepository.GetPagedAsync(
+            pageNumber,
+            pageSize,
+            filter,
+            orderBy);
+
+        // Map to response DTOs
+        var mappedItems = _mapper.Map<IEnumerable<CustomerResponse>>(items);
+
+        return (mappedItems, totalCount);
     }
 
     public async Task<CustomerResponse?> GetCustomerByIdAsync(int customerId)

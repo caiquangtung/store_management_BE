@@ -35,6 +35,38 @@ public abstract class BaseRepository<T> : IRepository<T> where T : class
         return await _dbSet.Where(predicate).ToListAsync();
     }
 
+    public virtual async Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(
+        int pageNumber,
+        int pageSize,
+        Expression<Func<T, bool>>? filter = null,
+        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null)
+    {
+        IQueryable<T> query = _dbSet;
+
+        // Apply filter if provided
+        if (filter != null)
+        {
+            query = query.Where(filter);
+        }
+
+        // Get total count before pagination
+        var totalCount = await query.CountAsync();
+
+        // Apply ordering if provided
+        if (orderBy != null)
+        {
+            query = orderBy(query);
+        }
+
+        // Apply pagination
+        var items = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (items, totalCount);
+    }
+
     public virtual async Task<T> AddAsync(T entity)
     {
         _dbSet.Add(entity);

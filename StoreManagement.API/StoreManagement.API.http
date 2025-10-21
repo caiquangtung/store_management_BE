@@ -1,6 +1,74 @@
-@StoreManagement.API_HostAddress = http://localhost:5001
+@StoreManagement.API_HostAddress = http://localhost:5000
+@token = 
 
-GET {{StoreManagement.API_HostAddress}}/weatherforecast/
+### Login to get token
+# @name login
+POST {{StoreManagement.API_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+### Users - sort by id asc
+GET {{StoreManagement.API_HostAddress}}/api/users?pageNumber=1&pageSize=10&sortBy=id
 Accept: application/json
+Authorization: Bearer {{token}}
+
+### Users - sort by username desc
+GET {{StoreManagement.API_HostAddress}}/api/users?pageNumber=1&pageSize=10&sortBy=username&sortDesc=true
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Products - sort by id desc
+GET {{StoreManagement.API_HostAddress}}/api/products?pageNumber=1&pageSize=10&sortBy=id&sortDesc=true
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Products - sort by name asc with search
+GET {{StoreManagement.API_HostAddress}}/api/products?pageNumber=1&pageSize=10&searchTerm=milk&sortBy=name
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Categories - sort by id asc
+GET {{StoreManagement.API_HostAddress}}/api/categories?pageNumber=1&pageSize=10&sortBy=id
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Suppliers - sort by name desc
+GET {{StoreManagement.API_HostAddress}}/api/suppliers?pageNumber=1&pageSize=10&sortBy=name&sortDesc=true
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Inventory - sort by id asc
+GET {{StoreManagement.API_HostAddress}}/api/inventory?pageNumber=1&pageSize=10&sortBy=id
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Inventory - filter by productId and sort by quantity desc
+GET {{StoreManagement.API_HostAddress}}/api/inventory?pageNumber=1&pageSize=10&productId=1&sortBy=quantity&sortDesc=true
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Customers - sort by id asc
+GET {{StoreManagement.API_HostAddress}}/api/customer?pageNumber=1&pageSize=10&sortBy=id
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Customers - search and sort by name desc
+GET {{StoreManagement.API_HostAddress}}/api/customer?pageNumber=1&pageSize=10&searchTerm=john&sortBy=name&sortDesc=true
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Promotions - sort by id asc
+GET {{StoreManagement.API_HostAddress}}/api/promotion?pageNumber=1&pageSize=10&sortBy=id
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Promotions - sort by startDate desc
+GET {{StoreManagement.API_HostAddress}}/api/promotion?pageNumber=1&pageSize=10&sortBy=startDate&sortDesc=true
+Accept: application/json
+Authorization: Bearer {{token}}
 
 ###

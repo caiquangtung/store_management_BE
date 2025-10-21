@@ -23,18 +23,19 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAllProducts([FromQuery] PaginationParameters pagination)
+    public async Task<IActionResult> GetAllProducts(
+        [FromQuery] PaginationParameters pagination,
+        [FromQuery] string? searchTerm = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] bool sortDesc = false)
     {
         try
         {
-            var products = await _productService.GetAllAsync();
-            var totalCount = products.Count();
-            var items = products
-                .Skip(pagination.Skip)
-                .Take(pagination.PageSize)
-                .ToList();
+            // Get paged products from service with database-level pagination and search
+            var (products, totalCount) = await _productService.GetAllPagedAsync(
+                pagination.PageNumber, pagination.PageSize, searchTerm, sortBy, sortDesc);
 
-            var pagedResult = PagedResult<ProductResponse>.Create(items, totalCount, pagination.PageNumber, pagination.PageSize);
+            var pagedResult = PagedResult<ProductResponse>.Create(products, totalCount, pagination.PageNumber, pagination.PageSize);
             return Ok(ApiResponse<PagedResult<ProductResponse>>.SuccessResponse(pagedResult, "Products retrieved successfully"));
         }
         catch (Exception ex)

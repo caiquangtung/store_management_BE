@@ -22,18 +22,18 @@ public class SuppliersController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAllSuppliers([FromQuery] PaginationParameters pagination)
+    public async Task<IActionResult> GetAllSuppliers(
+        [FromQuery] PaginationParameters pagination,
+        [FromQuery] string? searchTerm = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] bool sortDesc = false)
     {
         try
         {
-            var suppliers = await _supplierService.GetAllAsync();
-            var totalCount = suppliers.Count();
-            var items = suppliers
-                .Skip(pagination.Skip)
-                .Take(pagination.PageSize)
-                .ToList();
+            var (suppliers, totalCount) = await _supplierService.GetAllPagedAsync(
+                pagination.PageNumber, pagination.PageSize, searchTerm, sortBy, sortDesc);
 
-            var pagedResult = PagedResult<SupplierResponse>.Create(items, totalCount, pagination.PageNumber, pagination.PageSize);
+            var pagedResult = PagedResult<SupplierResponse>.Create(suppliers, totalCount, pagination.PageNumber, pagination.PageSize);
             return Ok(ApiResponse<PagedResult<SupplierResponse>>.SuccessResponse(pagedResult, "Suppliers retrieved successfully"));
         }
         catch (Exception ex)
