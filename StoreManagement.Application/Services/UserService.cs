@@ -118,35 +118,45 @@ public class UserService : IUserService
     }
 
     public async Task<UserResponse?> UpdateAsync(int id, UpdateUserRequest request)
+{
+    var user = await _userRepository.GetByIdAsync(id);
+    if (user == null)
     {
-        var user = await _userRepository.GetByIdAsync(id);
-        if (user == null)
-        {
-            return null;
-        }
-
-        // Update fields if provided
-        if (!string.IsNullOrEmpty(request.FullName))
-        {
-            user.FullName = request.FullName;
-        }
-
-        if (request.Role.HasValue)
-        {
-            user.Role = request.Role.Value;
-        }
-
-        // Update password if provided
-        if (!string.IsNullOrEmpty(request.NewPassword))
-        {
-            user.Password = _passwordService.HashPassword(request.NewPassword);
-        }
-
-        var updatedUser = await _userRepository.UpdateAsync(user);
-        await _userRepository.SaveChangesAsync();
-
-        return _mapper.Map<UserResponse>(updatedUser);
+        return null;
     }
+
+    // Update fields if provided
+    if (!string.IsNullOrEmpty(request.FullName))
+    {
+        user.FullName = request.FullName;
+    }
+
+    if (request.Role.HasValue)
+    {
+        user.Role = request.Role.Value;
+    }
+
+    // UPDATED: Handle username update if provided
+    if (!string.IsNullOrEmpty(request.Username))
+    {
+        if (await _userRepository.UsernameExistsAsync(request.Username) && request.Username != user.Username)
+        {
+            throw new InvalidOperationException("Username already exists");
+        }
+        user.Username = request.Username;
+    }
+
+    // Update password if provided
+    if (!string.IsNullOrEmpty(request.NewPassword))
+    {
+        user.Password = _passwordService.HashPassword(request.NewPassword);
+    }
+
+    var updatedUser = await _userRepository.UpdateAsync(user);
+    await _userRepository.SaveChangesAsync();
+
+    return _mapper.Map<UserResponse>(updatedUser);
+}
 
     public async Task<bool> DeleteAsync(int id)
     {

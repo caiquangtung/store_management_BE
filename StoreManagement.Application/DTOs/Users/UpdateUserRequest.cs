@@ -10,4 +10,5 @@ public class UpdateUserRequest
     public string? FullName { get; set; }
     public UserRole? Role { get; set; }
     public string? NewPassword { get; set; }
+    public string? Username { get; set; }  
 }

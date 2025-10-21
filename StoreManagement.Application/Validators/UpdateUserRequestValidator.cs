@@ -26,5 +26,11 @@ public class UpdateUserRequestValidator : AbstractValidator<UpdateUserRequest>
             .MaximumLength(100)
             .WithMessage("New password must not exceed 100 characters")
             .When(x => !string.IsNullOrEmpty(x.NewPassword));
+            
+        RuleFor(x => x.Username)
+            .NotEmpty().WithMessage("Username is required if provided")
+            .Length(3, 50).WithMessage("Username must be between 3 and 50 characters")
+            .Matches("^[a-zA-Z0-9_]+$").WithMessage("Username can only contain alphanumeric characters and underscore")
+            .When(x => !string.IsNullOrEmpty(x.Username));
     }
 }
