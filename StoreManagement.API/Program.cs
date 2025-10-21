@@ -15,6 +15,7 @@ using StoreManagement.Domain.Interfaces;
 using StoreManagement.Infrastructure.Repositories;
 using StoreManagement.Infrastructure.Extensions;
 using StoreManagement.Application.Common.Interfaces;
+using StoreManagement.Application.Mappings; 
 using AutoMapper;
 using StoreManagement.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
