@@ -186,6 +186,16 @@ public class StoreDbContext : DbContext
             entity.Property(e => e.Email).HasColumnName("email");
             entity.Property(e => e.Address).HasColumnName("address");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasConversion(
+                    v => v.ToString().ToLowerInvariant(),
+                    v => Enum.Parse<EntityStatus>(v, true)
+                )
+                .HasDefaultValue(EntityStatus.Active);
+            
+            // Tự động lọc các bản ghi đã bị "xóa mềm"
+            entity.HasQueryFilter(c => c.Status != EntityStatus.Deleted);
         });
 
         // Configure primary keys

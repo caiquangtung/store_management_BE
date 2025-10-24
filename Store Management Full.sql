@@ -22,6 +22,7 @@ CREATE TABLE customers (
     phone VARCHAR(20),
     email VARCHAR(100),
     address TEXT,
+    status ENUM('active', 'inactive', 'deleted') DEFAULT 'active', -- <-- CẬP NHẬT
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

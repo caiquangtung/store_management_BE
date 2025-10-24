@@ -4,7 +4,7 @@ using StoreManagement.Application.DTOs.Customer;
 using StoreManagement.Domain.Entities;
 using StoreManagement.Domain.Interfaces;
 using System.Linq.Expressions;
-
+using StoreManagement.Domain.Enums;
 namespace StoreManagement.Application.Services;
 
 public class CustomerService : ICustomerService
@@ -38,16 +38,15 @@ public class CustomerService : ICustomerService
     }
 
     public async Task<(IEnumerable<CustomerResponse> Items, int TotalCount)> GetCustomersPagedAsync(
-        int pageNumber, int pageSize, string? searchTerm = null, string? sortBy = null, bool sortDesc = false)
+        int pageNumber, int pageSize, EntityStatus? status = null, string? searchTerm = null, string? sortBy = null, bool sortDesc = false)
     {
         // Build filter expression
-        Expression<Func<Customer, bool>>? filter = null;
-        if (!string.IsNullOrEmpty(searchTerm))
-        {
-            filter = c => c.Name.Contains(searchTerm) ||
-                         (c.Email != null && c.Email.Contains(searchTerm)) ||
-                         (c.Phone != null && c.Phone.Contains(searchTerm));
-        }
+        Expression<Func<Customer, bool>> filter = c =>
+            (!status.HasValue || c.Status == status.Value) && // <-- LOGIC LỌC THEO STATUS
+            (string.IsNullOrEmpty(searchTerm) ||
+                c.Name.Contains(searchTerm) ||
+                (c.Email != null && c.Email.Contains(searchTerm)) ||
+                (c.Phone != null && c.Phone.Contains(searchTerm)));
 
         Expression<Func<Customer, object>> primarySort = (sortBy ?? string.Empty).ToLower() switch
         {
@@ -125,6 +124,12 @@ public class CustomerService : ICustomerService
             return null;
 
         _mapper.Map(request, existingCustomer);
+
+        if (request.Status.HasValue)
+        {
+            existingCustomer.Status = request.Status.Value;
+        }
+
         var updatedCustomer = await _customerRepository.UpdateAsync(existingCustomer);
         await _customerRepository.SaveChangesAsync();
         return _mapper.Map<CustomerResponse>(updatedCustomer);
@@ -136,7 +141,8 @@ public class CustomerService : ICustomerService
         if (customer == null)
             return false;
 
-        await _customerRepository.DeleteAsync(customer);
+        customer.Status = EntityStatus.Deleted;
+        await _customerRepository.UpdateAsync(customer);
         await _customerRepository.SaveChangesAsync();
         return true;
     }
