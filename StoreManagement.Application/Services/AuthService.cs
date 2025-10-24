@@ -28,9 +28,10 @@ public class AuthService : IAuthService
     {
         // Find user by username
         var user = await _userRepository.GetByUsernameAsync(request.Username);
-        if (user == null)
+        // Nếu user không tồn tại HOẶC user đang bị vô hiệu hóa, trả về null.
+        if (user == null || user.Status == Domain.Enums.EntityStatus.Inactive)
         {
-            return null; // User not found
+            return null; // User not found or is inactive
         }
 
         // Verify password

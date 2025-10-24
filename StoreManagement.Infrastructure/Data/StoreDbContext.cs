@@ -41,8 +41,19 @@ public class StoreDbContext : DbContext
                     v => Enum.Parse<UserRole>(v, true)
                 );
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasConversion(
+                    v => v.ToString().ToLowerInvariant(), // Lưu vào DB dưới dạng 'active', 'inactive', 'deleted'
+                    v => Enum.Parse<EntityStatus>(v, true) // Đọc từ DB
+                )
+                .HasDefaultValue(EntityStatus.Active); // Giá trị mặc định
+                // Tự động thêm điều kiện WHERE Status != 'deleted' vào MỌI câu lệnh truy vấn
+                entity.HasQueryFilter(u => u.Status != EntityStatus.Deleted);
         });
 
+        
         // Configure Category entity
         modelBuilder.Entity<Category>(entity =>
         {

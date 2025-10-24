@@ -292,6 +292,13 @@ GET /api/users?role=Admin&searchTerm=john
 
 # Paginated search
 GET /api/users?pageNumber=1&pageSize=10&role=Staff&searchTerm=nguyen
+
+# Lấy tất cả user đang hoạt động (Active)
+GET /api/users?status=Active
+
+# Lấy tất cả user đã bị vô hiệu hóa (Inactive)
+GET /api/users?status=Inactive
+
 ```
 
 **SQL Generated:**
