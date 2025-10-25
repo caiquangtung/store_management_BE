@@ -2,7 +2,7 @@ using FluentValidation;
 using StoreManagement.Application.DTOs.Products;
 using Microsoft.AspNetCore.Http;
 namespace StoreManagement.Application.Validators;
-
+using StoreManagement.Domain.Enums;
 public class UpdateProductRequestValidator : AbstractValidator<UpdateProductRequest>
 {
     public UpdateProductRequestValidator()
@@ -36,6 +36,11 @@ public class UpdateProductRequestValidator : AbstractValidator<UpdateProductRequ
         RuleFor(x => x.Image)
             .Must(BeAValidImage).WithMessage("Only JPG, JPEG, PNG images are allowed")
             .When(x => x.Image != null);
+        RuleFor(x => x.Status)
+            .IsInEnum().WithMessage("Invalid status specified.")
+            .Must(status => status != EntityStatus.Deleted)
+                .WithMessage("Cannot set status to 'Deleted' via update. Please use the DELETE endpoint.")
+            .When(x => x.Status.HasValue);
     }
 
     private bool BeAValidImage(IFormFile file)

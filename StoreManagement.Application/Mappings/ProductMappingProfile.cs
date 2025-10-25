@@ -19,7 +19,8 @@ public class ProductMappingProfile : Profile
             .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Price))
             .ForMember(dest => dest.Unit, opt => opt.MapFrom(src => src.Unit))
             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt))
-            .ForMember(dest => dest.ImagePath, opt => opt.MapFrom(src => src.ImagePath));
+            .ForMember(dest => dest.ImagePath, opt => opt.MapFrom(src => src.ImagePath))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status));
 
         // CreateProductRequest -> Product
         CreateMap<CreateProductRequest, Product>()

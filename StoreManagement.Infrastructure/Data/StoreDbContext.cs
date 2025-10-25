@@ -106,7 +106,16 @@ public class StoreDbContext : DbContext
             entity.Property(e => e.Unit).HasColumnName("unit").HasDefaultValue("pcs");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.ImagePath).HasColumnName("image_path");
-            
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasConversion(
+                    v => v.ToString().ToLowerInvariant(),
+                    v => Enum.Parse<EntityStatus>(v, true)
+                )
+                .HasDefaultValue(EntityStatus.Active);
+
+            // Tự động lọc các bản ghi đã bị "xóa mềm"
+            entity.HasQueryFilter(p => p.Status != EntityStatus.Deleted);
             // Foreign keys
             entity.HasOne(e => e.Category)
                 .WithMany(e => e.Products)

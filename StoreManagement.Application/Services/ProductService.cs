@@ -5,7 +5,7 @@ using StoreManagement.Application.DTOs.Products;
 using StoreManagement.Domain.Entities;
 using StoreManagement.Domain.Interfaces;
 using System.Linq.Expressions;
-
+using StoreManagement.Domain.Enums;
 namespace StoreManagement.Application.Services;
 
 public class ProductService : IProductService
@@ -33,15 +33,14 @@ public class ProductService : IProductService
         return _mapper.Map<IEnumerable<ProductResponse>>(products);
     }
 
-    public async Task<(IEnumerable<ProductResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, string? searchTerm = null, string? sortBy = null, bool sortDesc = false)
+    public async Task<(IEnumerable<ProductResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize,EntityStatus? status = null, string? searchTerm = null, string? sortBy = null, bool sortDesc = false)
     {
         // Build filter expression
-        Expression<Func<Product, bool>>? filter = null;
-        if (!string.IsNullOrEmpty(searchTerm))
-        {
-            filter = p => p.ProductName.Contains(searchTerm) ||
-                         (p.Barcode != null && p.Barcode.Contains(searchTerm));
-        }
+        Expression<Func<Product, bool>> filter = p =>
+            (!status.HasValue || p.Status == status.Value) &&
+            (string.IsNullOrEmpty(searchTerm) ||
+                p.ProductName.Contains(searchTerm) ||
+                (p.Barcode != null && p.Barcode.Contains(searchTerm)));
 
         // Build order expression with whitelist and stable tie-breaker by ProductId
         Expression<Func<Product, object>> primarySort = (sortBy ?? string.Empty).ToLower() switch
@@ -146,6 +145,10 @@ public class ProductService : IProductService
             }
             product.ImagePath = await SaveImageAsync(request.Image);
         }
+        if (request.Status.HasValue)
+        {
+            product.Status = request.Status.Value;
+        }
 
         var updatedProduct = await _productRepository.UpdateAsync(product);
         await _productRepository.SaveChangesAsync();
@@ -166,8 +169,8 @@ public class ProductService : IProductService
         {
             await DeleteImageAsync(product.ImagePath);
         }
-
-        await _productRepository.DeleteAsync(product);
+        product.Status = EntityStatus.Deleted;
+        await _productRepository.UpdateAsync(product);
         await _productRepository.SaveChangesAsync();
         return true;
     }

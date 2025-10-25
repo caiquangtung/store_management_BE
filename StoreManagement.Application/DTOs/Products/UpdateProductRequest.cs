@@ -1,5 +1,5 @@
 namespace StoreManagement.Application.DTOs.Products;
-
+using StoreManagement.Domain.Enums;
 public class ProductResponse
 {
     public int ProductId { get; set; }
@@ -11,4 +11,5 @@ public class ProductResponse
     public string Unit { get; set; } = "pcs";
     public DateTime CreatedAt { get; set; }
     public string? ImagePath { get; set; } = null;  
+    public EntityStatus Status { get; set; }
 }

@@ -1,5 +1,5 @@
 namespace StoreManagement.Domain.Entities;
-
+using StoreManagement.Domain.Enums;
 public class Product
 {
     public int ProductId { get; set; }
@@ -11,6 +11,7 @@ public class Product
     public string Unit { get; set; } = "pcs";
     public DateTime CreatedAt { get; set; }
     public string? ImagePath { get; set; } = null;  
+    public EntityStatus Status { get; set; } = EntityStatus.Active;
 
     // Navigation properties
     public virtual Category? Category { get; set; }
