@@ -30,7 +30,7 @@ CREATE TABLE customers (
 CREATE TABLE categories (
     category_id INT AUTO_INCREMENT PRIMARY KEY,
     category_name VARCHAR(100) NOT NULL,
-    status ENUM('active', 'inactive', 'deleted') DEFAULT 'active' -- <-- CẬP NHẬT
+    status ENUM('active', 'inactive', 'deleted') DEFAULT 'active'
 );
 
 -- Bảng nhà cung cấp
@@ -39,7 +39,8 @@ CREATE TABLE suppliers (
     name VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
     email VARCHAR(100),
-    address TEXT
+    address TEXT,
+    status ENUM('active', 'inactive', 'deleted') DEFAULT 'active'
 );
 
 -- Bảng sản phẩm

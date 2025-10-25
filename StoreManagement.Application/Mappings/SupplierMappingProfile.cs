@@ -8,9 +8,11 @@ public class SupplierMappingProfile : Profile
 {
     public SupplierMappingProfile()
     {
-        CreateMap<Supplier, SupplierResponse>();
+        CreateMap<Supplier, SupplierResponse>()
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status));
         CreateMap<CreateSupplierRequest, Supplier>()
             .ForMember(dest => dest.SupplierId, opt => opt.Ignore())
+            .ForMember(dest => dest.Status, opt => opt.Ignore())
             .ForMember(dest => dest.Products, opt => opt.Ignore());
     }
 }
