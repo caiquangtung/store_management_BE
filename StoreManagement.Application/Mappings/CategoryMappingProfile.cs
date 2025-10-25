@@ -8,9 +8,11 @@ public class CategoryMappingProfile : Profile
 {
     public CategoryMappingProfile()
     {
-        CreateMap<Category, CategoryResponse>();
+        CreateMap<Category, CategoryResponse>()
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status));
         CreateMap<CreateCategoryRequest, Category>()
             .ForMember(dest => dest.CategoryId, opt => opt.Ignore())
+            .ForMember(dest => dest.Status, opt => opt.Ignore())
             .ForMember(dest => dest.Products, opt => opt.Ignore());
     }
 }

@@ -60,6 +60,16 @@ public class StoreDbContext : DbContext
             entity.ToTable("categories");
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
             entity.Property(e => e.CategoryName).HasColumnName("category_name").IsRequired();
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasConversion(
+                    v => v.ToString().ToLowerInvariant(),
+                    v => Enum.Parse<EntityStatus>(v, true)
+                )
+                .HasDefaultValue(EntityStatus.Active);
+
+            // Tự động lọc các bản ghi đã bị "xóa mềm"
+            entity.HasQueryFilter(c => c.Status != EntityStatus.Deleted);
         });
 
         // Configure Supplier entity

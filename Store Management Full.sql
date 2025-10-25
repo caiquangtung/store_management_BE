@@ -29,7 +29,8 @@ CREATE TABLE customers (
 -- Bảng loại sản phẩm
 CREATE TABLE categories (
     category_id INT AUTO_INCREMENT PRIMARY KEY,
-    category_name VARCHAR(100) NOT NULL
+    category_name VARCHAR(100) NOT NULL,
+    status ENUM('active', 'inactive', 'deleted') DEFAULT 'active' -- <-- CẬP NHẬT
 );
 
 -- Bảng nhà cung cấp
