@@ -1,0 +1,334 @@
+### Store Management - Order API Test Collection
+### Base URL
+@baseUrl = http://localhost:5000
+@token = {{login.response.body.data.token}}
+
+##########################################################
+### 1. AUTHENTICATION
+##########################################################
+
+### Login - Get JWT Token
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+##########################################################
+### 2. ORDER CRUD OPERATIONS
+##########################################################
+
+### Get All Orders (Paginated)
+GET {{baseUrl}}/api/orders?pageNumber=1&pageSize=10
+Authorization: Bearer {{token}}
+
+### Get All Orders with Status Filter
+GET {{baseUrl}}/api/orders?pageNumber=1&pageSize=10&status=Pending
+Authorization: Bearer {{token}}
+
+### Get Orders by User
+GET {{baseUrl}}/api/orders?pageNumber=1&pageSize=10&userId=1
+Authorization: Bearer {{token}}
+
+### Get Orders by Customer
+GET {{baseUrl}}/api/orders?pageNumber=1&pageSize=10&customerId=1
+Authorization: Bearer {{token}}
+
+### Get Order by ID
+GET {{baseUrl}}/api/orders/1
+Authorization: Bearer {{token}}
+
+### Create New Order (Shopping Cart)
+POST {{baseUrl}}/api/orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customerId": 1
+}
+
+### Create Order for Walk-in Customer (No Customer)
+POST {{baseUrl}}/api/orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+### Update Order (Update Customer)
+PUT {{baseUrl}}/api/orders/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customerId": 2
+}
+
+### Cancel Order
+DELETE {{baseUrl}}/api/orders/1
+Authorization: Bearer {{token}}
+
+##########################################################
+### 3. ORDER ITEMS MANAGEMENT
+##########################################################
+
+### Add Item to Order
+# @name addItem
+POST {{baseUrl}}/api/orders/1/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "quantity": 5
+}
+
+### Update Order Item (Change Quantity)
+PUT {{baseUrl}}/api/orders/1/items/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "quantity": 10
+}
+
+### Delete Order Item
+DELETE {{baseUrl}}/api/orders/1/items/1
+Authorization: Bearer {{token}}
+
+##########################################################
+### 4. PROMOTION MANAGEMENT
+##########################################################
+
+### Apply Promotion to Order
+POST {{baseUrl}}/api/orders/1/promotion
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "promoCode": "SAVE10"
+}
+
+### Remove Promotion from Order
+DELETE {{baseUrl}}/api/orders/1/promotion
+Authorization: Bearer {{token}}
+
+##########################################################
+### 5. CHECKOUT & PAYMENT
+##########################################################
+
+### Checkout Order (Cash Payment)
+POST {{baseUrl}}/api/orders/1/checkout
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentMethod": "Cash",
+  "amount": 135.00
+}
+
+### Checkout Order (Card Payment)
+POST {{baseUrl}}/api/orders/1/checkout
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentMethod": "Card",
+  "amount": 135.00
+}
+
+### Checkout Order (Bank Transfer)
+POST {{baseUrl}}/api/orders/1/checkout
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentMethod": "BankTransfer",
+  "amount": 135.00
+}
+
+### Checkout Order (E-Wallet)
+POST {{baseUrl}}/api/orders/1/checkout
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentMethod": "EWallet",
+  "amount": 135.00
+}
+
+##########################################################
+### 6. COMPLETE ORDER WORKFLOW EXAMPLE
+##########################################################
+
+### Step 1: Create New Order (Cart)
+# @name createOrder
+POST {{baseUrl}}/api/orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customerId": 1
+}
+
+### Step 2: Add First Item to Cart
+# @name addItem1
+POST {{baseUrl}}/api/orders/{{createOrder.response.body.data.orderId}}/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "quantity": 3
+}
+
+### Step 3: Add Second Item to Cart
+# @name addItem2
+POST {{baseUrl}}/api/orders/{{createOrder.response.body.data.orderId}}/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "productId": 2,
+  "quantity": 2
+}
+
+### Step 4: Update First Item Quantity
+PUT {{baseUrl}}/api/orders/{{createOrder.response.body.data.orderId}}/items/{{addItem1.response.body.data.orderItems[0].orderItemId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "quantity": 5
+}
+
+### Step 5: Apply Promotion
+POST {{baseUrl}}/api/orders/{{createOrder.response.body.data.orderId}}/promotion
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "promoCode": "SAVE10"
+}
+
+### Step 6: Check Current Order Details
+GET {{baseUrl}}/api/orders/{{createOrder.response.body.data.orderId}}
+Authorization: Bearer {{token}}
+
+### Step 7: Checkout Order
+POST {{baseUrl}}/api/orders/{{createOrder.response.body.data.orderId}}/checkout
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentMethod": "Cash",
+  "amount": {{createOrder.response.body.data.finalAmount}}
+}
+
+### Step 8: Verify Order Status Changed to Paid
+GET {{baseUrl}}/api/orders/{{createOrder.response.body.data.orderId}}
+Authorization: Bearer {{token}}
+
+##########################################################
+### 7. ERROR HANDLING TESTS
+##########################################################
+
+### Try to Add Item to Non-Existent Order
+POST {{baseUrl}}/api/orders/9999/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "quantity": 5
+}
+
+### Try to Add Item with Invalid Product ID
+POST {{baseUrl}}/api/orders/1/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "productId": 9999,
+  "quantity": 5
+}
+
+### Try to Add Item with Insufficient Inventory
+POST {{baseUrl}}/api/orders/1/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "quantity": 99999
+}
+
+### Try to Add Item with Invalid Quantity
+POST {{baseUrl}}/api/orders/1/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "quantity": 0
+}
+
+### Try to Apply Invalid Promotion Code
+POST {{baseUrl}}/api/orders/1/promotion
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "promoCode": "INVALID"
+}
+
+### Try to Checkout Empty Order
+POST {{baseUrl}}/api/orders/1/checkout
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentMethod": "Cash",
+  "amount": 0
+}
+
+### Try to Checkout with Wrong Payment Amount
+POST {{baseUrl}}/api/orders/1/checkout
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentMethod": "Cash",
+  "amount": 999.99
+}
+
+### Try to Modify Paid Order (Should Fail)
+PUT {{baseUrl}}/api/orders/1/items/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "quantity": 10
+}
+
+##########################################################
+### 8. REQUIRED DATA FOR SETUP
+##########################################################
+
+### Get Products List (To get valid product IDs for testing)
+GET {{baseUrl}}/api/products?pageNumber=1&pageSize=10
+Authorization: Bearer {{token}}
+
+### Get Customers List (To get valid customer IDs for testing)
+GET {{baseUrl}}/api/customers?pageNumber=1&pageSize=10
+Authorization: Bearer {{token}}
+
+### Get Inventory (To check available quantities)
+GET {{baseUrl}}/api/inventory?pageNumber=1&pageSize=10
+Authorization: Bearer {{token}}
+
+### Get Promotions (To get valid promotion codes for testing)
+GET {{baseUrl}}/api/promotions?pageNumber=1&pageSize=10
+Authorization: Bearer {{token}}
