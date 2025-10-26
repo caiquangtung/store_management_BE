@@ -17,7 +17,8 @@ public class UserMappingProfile : Profile
             .ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.Username))
             .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.FullName))
             .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role))
-            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt));
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status));
 
         // CreateUserRequest -> User (excluding password hashing - handled in service)
         CreateMap<CreateUserRequest, User>()

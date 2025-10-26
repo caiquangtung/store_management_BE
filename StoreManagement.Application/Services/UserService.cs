@@ -39,31 +39,24 @@ public class UserService : IUserService
         return _mapper.Map<IEnumerable<UserResponse>>(users);
     }
 
-    public async Task<(IEnumerable<UserResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, UserRole? role = null, string? searchTerm = null, string? sortBy = null, bool sortDesc = false)
+    public async Task<(IEnumerable<UserResponse> Items, int TotalCount)> GetAllPagedAsync(
+        int pageNumber, 
+        int pageSize, 
+        EntityStatus? status = null, 
+        UserRole? role = null, 
+        string? searchTerm = null, 
+        string? sortBy = null, 
+        bool sortDesc = false)
     {
-        // Build filter expression
-        Expression<Func<User, bool>>? filter = null;
+        // Xây dựng một biểu thức lọc duy nhất xử lý tất cả các tham số
+        Expression<Func<User, bool>> filter = u =>
+            (!status.HasValue || u.Status == status.Value) &&
+            (!role.HasValue || u.Role == role.Value) &&
+            (string.IsNullOrEmpty(searchTerm) || 
+                u.Username.Contains(searchTerm) || 
+                (u.FullName != null && u.FullName.Contains(searchTerm)));
 
-        if (role.HasValue && !string.IsNullOrEmpty(searchTerm))
-        {
-            // Both filters: role AND search
-            filter = u => u.Role == role.Value &&
-                         (u.Username.Contains(searchTerm) ||
-                          (u.FullName != null && u.FullName.Contains(searchTerm)));
-        }
-        else if (role.HasValue)
-        {
-            // Only role filter
-            filter = u => u.Role == role.Value;
-        }
-        else if (!string.IsNullOrEmpty(searchTerm))
-        {
-            // Only search filter
-            filter = u => u.Username.Contains(searchTerm) ||
-                         (u.FullName != null && u.FullName.Contains(searchTerm));
-        }
-
-        // Build order expression with whitelist and stable tie-breaker by UserId
+        // Logic sắp xếp (không thay đổi)
         Expression<Func<User, object>> primarySort = (sortBy ?? string.Empty).ToLower() switch
         {
             "id" => u => u.UserId,
@@ -76,14 +69,14 @@ public class UserService : IUserService
         Func<IQueryable<User>, IOrderedQueryable<User>> orderBy = q =>
         {
             var ordered = sortDesc ? q.OrderByDescending(primarySort) : q.OrderBy(primarySort);
-            // Tie-breaker for stable pagination
             return sortDesc ? ordered.ThenByDescending(u => u.UserId) : ordered.ThenBy(u => u.UserId);
         };
 
+        // Gọi repository với biểu thức lọc đã được xây dựng
         var (items, totalCount) = await _userRepository.GetPagedAsync(
             pageNumber,
             pageSize,
-            filter,
+            filter, // <-- Sử dụng biểu thức lọc mới
             orderBy);
 
         var mappedItems = _mapper.Map<IEnumerable<UserResponse>>(items);
@@ -136,10 +129,25 @@ public class UserService : IUserService
             user.Role = request.Role.Value;
         }
 
+        // UPDATED: Handle username update if provided
+        if (!string.IsNullOrEmpty(request.Username))
+        {
+            if (await _userRepository.UsernameExistsAsync(request.Username) && request.Username != user.Username)
+            {
+                throw new InvalidOperationException("Username already exists");
+            }
+            user.Username = request.Username;
+        }
+
         // Update password if provided
         if (!string.IsNullOrEmpty(request.NewPassword))
         {
             user.Password = _passwordService.HashPassword(request.NewPassword);
+        }
+        
+        if (request.Status.HasValue)
+        {
+            user.Status = request.Status.Value;
         }
 
         var updatedUser = await _userRepository.UpdateAsync(user);
@@ -150,13 +158,18 @@ public class UserService : IUserService
 
     public async Task<bool> DeleteAsync(int id)
     {
-        var user = await _userRepository.GetByIdAsync(id);
-        if (user == null)
+        // Do đã có Global Query Filter, GetByIdAsync sẽ không tìm thấy user đã "deleted".
+        // Để xóa mềm một user, chúng ta cần bỏ qua filter này tạm thời.
+        var user = await _userRepository.FindAsync(u => u.UserId == id);
+        var userToUpdate = user.FirstOrDefault();
+
+        if (userToUpdate == null)
         {
             return false;
         }
+        userToUpdate.Status = EntityStatus.Deleted;
 
-        await _userRepository.DeleteAsync(user);
+        await _userRepository.UpdateAsync(userToUpdate);
         await _userRepository.SaveChangesAsync();
         return true;
     }

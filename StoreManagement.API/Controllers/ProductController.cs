@@ -5,7 +5,7 @@ using StoreManagement.Application.DTOs.Products;
 using StoreManagement.Application.Services;
 using System.Linq;
 using System.Globalization;
-
+using StoreManagement.Domain.Enums;
 namespace StoreManagement.API.Controllers;
 
 [ApiController]
@@ -25,6 +25,7 @@ public class ProductsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAllProducts(
         [FromQuery] PaginationParameters pagination,
+        [FromQuery] EntityStatus? status = null,
         [FromQuery] string? searchTerm = null,
         [FromQuery] string? sortBy = null,
         [FromQuery] bool sortDesc = false)
@@ -33,7 +34,7 @@ public class ProductsController : ControllerBase
         {
             // Get paged products from service with database-level pagination and search
             var (products, totalCount) = await _productService.GetAllPagedAsync(
-                pagination.PageNumber, pagination.PageSize, searchTerm, sortBy, sortDesc);
+                pagination.PageNumber, pagination.PageSize, status, searchTerm, sortBy, sortDesc);
 
             var pagedResult = PagedResult<ProductResponse>.Create(products, totalCount, pagination.PageNumber, pagination.PageSize);
             return Ok(ApiResponse<PagedResult<ProductResponse>>.SuccessResponse(pagedResult, "Products retrieved successfully"));

@@ -17,6 +17,9 @@ public class CustomerMappingProfile : Profile
             .ForMember(dest => dest.CustomerId, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.Orders, opt => opt.Ignore());
+            
+        CreateMap<Customer, CustomerResponse>()
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status));
 
         CreateMap<Customer, CustomerResponse>();
     }

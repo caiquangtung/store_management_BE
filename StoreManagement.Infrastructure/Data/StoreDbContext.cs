@@ -41,7 +41,18 @@ public class StoreDbContext : DbContext
                     v => Enum.Parse<UserRole>(v, true)
                 );
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasConversion(
+                    v => v.ToString().ToLowerInvariant(), // Lưu vào DB dưới dạng 'active', 'inactive', 'deleted'
+                    v => Enum.Parse<EntityStatus>(v, true) // Đọc từ DB
+                )
+                .HasDefaultValue(EntityStatus.Active); // Giá trị mặc định
+                                                       // Tự động thêm điều kiện WHERE Status != 'deleted' vào MỌI câu lệnh truy vấn
+            entity.HasQueryFilter(u => u.Status != EntityStatus.Deleted);
         });
+
 
         // Configure Category entity
         modelBuilder.Entity<Category>(entity =>
@@ -49,6 +60,16 @@ public class StoreDbContext : DbContext
             entity.ToTable("categories");
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
             entity.Property(e => e.CategoryName).HasColumnName("category_name").IsRequired();
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasConversion(
+                    v => v.ToString().ToLowerInvariant(),
+                    v => Enum.Parse<EntityStatus>(v, true)
+                )
+                .HasDefaultValue(EntityStatus.Active);
+
+            // Tự động lọc các bản ghi đã bị "xóa mềm"
+            entity.HasQueryFilter(c => c.Status != EntityStatus.Deleted);
         });
 
         // Configure Supplier entity
@@ -60,6 +81,16 @@ public class StoreDbContext : DbContext
             entity.Property(e => e.Phone).HasColumnName("phone");
             entity.Property(e => e.Email).HasColumnName("email");
             entity.Property(e => e.Address).HasColumnName("address");
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasConversion(
+                    v => v.ToString().ToLowerInvariant(),
+                    v => Enum.Parse<EntityStatus>(v, true)
+                )
+                .HasDefaultValue(EntityStatus.Active);
+
+            // Tự động lọc các bản ghi đã bị "xóa mềm"
+            entity.HasQueryFilter(s => s.Status != EntityStatus.Deleted);
         });
 
         // Configure Product entity
@@ -75,7 +106,16 @@ public class StoreDbContext : DbContext
             entity.Property(e => e.Unit).HasColumnName("unit").HasDefaultValue("pcs");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.ImagePath).HasColumnName("image_path");
-            
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasConversion(
+                    v => v.ToString().ToLowerInvariant(),
+                    v => Enum.Parse<EntityStatus>(v, true)
+                )
+                .HasDefaultValue(EntityStatus.Active);
+
+            // Tự động lọc các bản ghi đã bị "xóa mềm"
+            entity.HasQueryFilter(p => p.Status != EntityStatus.Deleted);
             // Foreign keys
             entity.HasOne(e => e.Category)
                 .WithMany(e => e.Products)
@@ -96,12 +136,15 @@ public class StoreDbContext : DbContext
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.Quantity).HasColumnName("quantity");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
-            
+
             // Foreign key to Product
             entity.HasOne(e => e.Product)
                 .WithMany(e => e.Inventory)
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Add matching query filter to work with Product's global query filter
+            entity.HasQueryFilter(i => i.Product!.Status != EntityStatus.Deleted);
         });
 
         // Configure Order entity
@@ -116,6 +159,22 @@ public class StoreDbContext : DbContext
             entity.Property(e => e.Status).HasColumnName("status").HasConversion<string>();
             entity.Property(e => e.TotalAmount).HasColumnName("total_amount").HasColumnType("decimal(10,2)");
             entity.Property(e => e.DiscountAmount).HasColumnName("discount_amount").HasColumnType("decimal(10,2)");
+
+            // Foreign keys
+            entity.HasOne(e => e.Customer)
+                .WithMany(e => e.Orders)
+                .HasForeignKey(e => e.CustomerId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.User)
+                .WithMany(e => e.Orders)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Promotion)
+                .WithMany(p => p.Orders)
+                .HasForeignKey(e => e.PromoId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // Configure OrderItem entity (NEW: Add mapping for OrderId, ProductId)
@@ -128,7 +187,7 @@ public class StoreDbContext : DbContext
             entity.Property(e => e.Quantity).HasColumnName("quantity").IsRequired();
             entity.Property(e => e.Price).HasColumnName("price").HasColumnType("decimal(10,2)").IsRequired();
             entity.Property(e => e.Subtotal).HasColumnName("subtotal").HasColumnType("decimal(10,2)").IsRequired();
-            
+
             // Foreign keys
             entity.HasOne(e => e.Order)
                 .WithMany(e => e.OrderItems)
@@ -162,8 +221,16 @@ public class StoreDbContext : DbContext
         {
             entity.ToTable("payments");
             entity.Property(e => e.PaymentId).HasColumnName("payment_id");
-            entity.Property(e => e.Amount).HasColumnType("decimal(10,2)");
-            entity.Property(e => e.PaymentMethod).HasConversion<string>();
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.Amount).HasColumnName("amount").HasColumnType("decimal(10,2)");
+            entity.Property(e => e.PaymentMethod).HasColumnName("payment_method").HasConversion<string>();
+            entity.Property(e => e.PaymentDate).HasColumnName("payment_date").HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            // Foreign key
+            entity.HasOne(e => e.Order)
+                .WithMany(e => e.Payments)
+                .HasForeignKey(e => e.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Customer>(entity =>
@@ -175,6 +242,16 @@ public class StoreDbContext : DbContext
             entity.Property(e => e.Email).HasColumnName("email");
             entity.Property(e => e.Address).HasColumnName("address");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasConversion(
+                    v => v.ToString().ToLowerInvariant(),
+                    v => Enum.Parse<EntityStatus>(v, true)
+                )
+                .HasDefaultValue(EntityStatus.Active);
+
+            // Tự động lọc các bản ghi đã bị "xóa mềm"
+            entity.HasQueryFilter(c => c.Status != EntityStatus.Deleted);
         });
 
         // Configure primary keys

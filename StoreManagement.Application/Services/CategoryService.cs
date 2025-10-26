@@ -3,7 +3,7 @@ using StoreManagement.Application.DTOs.Categories;
 using StoreManagement.Domain.Entities;
 using StoreManagement.Domain.Interfaces;
 using System.Linq.Expressions;
-
+using StoreManagement.Domain.Enums;
 namespace StoreManagement.Application.Services;
 
 public class CategoryService : ICategoryService
@@ -29,14 +29,12 @@ public class CategoryService : ICategoryService
         return _mapper.Map<IEnumerable<CategoryResponse>>(categories);
     }
 
-    public async Task<(IEnumerable<CategoryResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, string? searchTerm = null, string? sortBy = null, bool sortDesc = false)
+    public async Task<(IEnumerable<CategoryResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, EntityStatus? status = null, string? searchTerm = null, string? sortBy = null, bool sortDesc = false)
     {
         // Build filter expression
-        Expression<Func<Category, bool>>? filter = null;
-        if (!string.IsNullOrEmpty(searchTerm))
-        {
-            filter = c => c.CategoryName.Contains(searchTerm);
-        }
+        Expression<Func<Category, bool>> filter = c =>
+            (!status.HasValue || c.Status == status.Value) &&
+            (string.IsNullOrEmpty(searchTerm) || c.CategoryName.Contains(searchTerm));
 
         Expression<Func<Category, object>> primarySort = (sortBy ?? string.Empty).ToLower() switch
         {
@@ -82,6 +80,11 @@ public class CategoryService : ICategoryService
             category.CategoryName = request.CategoryName;
         }
 
+        if (request.Status.HasValue)
+        {
+            category.Status = request.Status.Value;
+        }
+
         var updatedCategory = await _categoryRepository.UpdateAsync(category);
         await _categoryRepository.SaveChangesAsync();
         return _mapper.Map<CategoryResponse>(updatedCategory);
@@ -95,7 +98,8 @@ public class CategoryService : ICategoryService
             return false;
         }
 
-        await _categoryRepository.DeleteAsync(category);
+        category.Status = EntityStatus.Deleted;
+        await _categoryRepository.UpdateAsync(category);
         await _categoryRepository.SaveChangesAsync();
         return true;
     }

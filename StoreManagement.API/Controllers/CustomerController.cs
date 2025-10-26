@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using StoreManagement.Application.DTOs.Customer;
 using StoreManagement.Application.Services;
 using StoreManagement.API.Models;
-
+using StoreManagement.Domain.Enums;
 namespace StoreManagement.API.Controllers;
 
 [ApiController]
@@ -24,6 +24,7 @@ public class CustomerController : ControllerBase
     [Authorize(Policy = "AdminOrStaff")]
     public async Task<ActionResult<ApiResponse<PagedResult<CustomerResponse>>>> GetCustomers(
         [FromQuery] PaginationParameters pagination,
+        [FromQuery] EntityStatus? status = null,
         [FromQuery] string? searchTerm = null,
         [FromQuery] string? sortBy = null,
         [FromQuery] bool sortDesc = false)
@@ -32,7 +33,7 @@ public class CustomerController : ControllerBase
         {
             // Get paged customers from service with database-level pagination
             var (customers, totalCount) = await _customerService.GetCustomersPagedAsync(
-                pagination.PageNumber, pagination.PageSize, searchTerm, sortBy, sortDesc);
+                pagination.PageNumber, pagination.PageSize, status, searchTerm, sortBy, sortDesc);
 
             var pagedResult = PagedResult<CustomerResponse>.Create(customers, totalCount, pagination.PageNumber, pagination.PageSize);
 

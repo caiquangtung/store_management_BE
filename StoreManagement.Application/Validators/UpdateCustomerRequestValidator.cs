@@ -1,6 +1,6 @@
 using FluentValidation;
 using StoreManagement.Application.DTOs.Customer;
-
+using StoreManagement.Domain.Enums;
 namespace StoreManagement.Application.Validators;
 
 public class UpdateCustomerRequestValidator : AbstractValidator<UpdateCustomerRequest>
@@ -24,5 +24,11 @@ public class UpdateCustomerRequestValidator : AbstractValidator<UpdateCustomerRe
 
         RuleFor(x => x.Address)
             .MaximumLength(200).WithMessage("Address cannot exceed 200 characters");
+        
+        RuleFor(x => x.Status)
+            .IsInEnum().WithMessage("Invalid status specified.")
+            .Must(status => status != EntityStatus.Deleted)
+                .WithMessage("Cannot set status to 'Deleted' via update. Please use the DELETE endpoint.")
+            .When(x => x.Status.HasValue);
     }
 }

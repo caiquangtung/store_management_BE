@@ -11,6 +11,7 @@ public class User
     public UserRole Role { get; set; } = UserRole.Staff;
     public DateTime CreatedAt { get; set; }
 
+    public EntityStatus Status { get; set; } = EntityStatus.Active;
     // Navigation properties
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
 }

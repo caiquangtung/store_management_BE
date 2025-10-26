@@ -3,7 +3,7 @@ using StoreManagement.Application.DTOs.Suppliers;
 using StoreManagement.Domain.Entities;
 using StoreManagement.Domain.Interfaces;
 using System.Linq.Expressions;
-
+using StoreManagement.Domain.Enums;
 namespace StoreManagement.Application.Services;
 
 public class SupplierService : ISupplierService
@@ -29,16 +29,15 @@ public class SupplierService : ISupplierService
         return _mapper.Map<IEnumerable<SupplierResponse>>(suppliers);
     }
 
-    public async Task<(IEnumerable<SupplierResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, string? searchTerm = null, string? sortBy = null, bool sortDesc = false)
+    public async Task<(IEnumerable<SupplierResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, EntityStatus? status = null, string? searchTerm = null, string? sortBy = null, bool sortDesc = false)
     {
         // Build filter expression
-        Expression<Func<Supplier, bool>>? filter = null;
-        if (!string.IsNullOrEmpty(searchTerm))
-        {
-            filter = s => s.Name.Contains(searchTerm) ||
-                         (s.Email != null && s.Email.Contains(searchTerm)) ||
-                         (s.Phone != null && s.Phone.Contains(searchTerm));
-        }
+        Expression<Func<Supplier, bool>> filter = s =>
+            (!status.HasValue || s.Status == status.Value) &&
+            (string.IsNullOrEmpty(searchTerm) ||
+                s.Name.Contains(searchTerm) ||
+                (s.Email != null && s.Email.Contains(searchTerm)) ||
+                (s.Phone != null && s.Phone.Contains(searchTerm)));
 
         Expression<Func<Supplier, object>> primarySort = (sortBy ?? string.Empty).ToLower() switch
         {
@@ -96,6 +95,10 @@ public class SupplierService : ISupplierService
         {
             supplier.Address = request.Address;
         }
+        if (request.Status.HasValue)
+        {
+            supplier.Status = request.Status.Value;
+        }
 
         var updatedSupplier = await _supplierRepository.UpdateAsync(supplier);
         await _supplierRepository.SaveChangesAsync();
@@ -109,8 +112,8 @@ public class SupplierService : ISupplierService
         {
             return false;
         }
-
-        await _supplierRepository.DeleteAsync(supplier);
+        supplier.Status = EntityStatus.Deleted;
+        await _supplierRepository.UpdateAsync(supplier);
         await _supplierRepository.SaveChangesAsync();
         return true;
     }

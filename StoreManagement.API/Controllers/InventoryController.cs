@@ -63,32 +63,37 @@ public class InventoryController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "AdminOnly")]
-    public async Task<IActionResult> CreateInventory([FromBody] CreateInventoryRequest request)
+[Authorize(Policy = "AdminOnly")]
+public async Task<IActionResult> CreateInventory([FromBody] CreateInventoryRequest request)
+{
+    try
     {
-        try
+        if (!ModelState.IsValid)
         {
-            if (!ModelState.IsValid)
-            {
-                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<object>.ValidationErrorResponse(errors));
-            }
-
-            var inventory = await _inventoryService.CreateAsync(request);
-            if (inventory == null)
-            {
-                return BadRequest(ApiResponse.ErrorResponse("Failed to create inventory"));
-            }
-
-            return CreatedAtAction(nameof(GetInventoryById), new { id = inventory.InventoryId },
-                ApiResponse<InventoryResponse>.SuccessResponse(inventory, "Inventory created successfully"));
+            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+            return BadRequest(ApiResponse<object>.ValidationErrorResponse(errors));
         }
-        catch (Exception ex)
+
+        var inventories = await _inventoryService.CreateAsync(request);  // UPDATED: Now returns List<InventoryResponse> for bulk
+        if (inventories == null || !inventories.Any())
         {
-            _logger.LogError(ex, "Error occurred while creating inventory");
-            return StatusCode(500, ApiResponse.ErrorResponse("An error occurred while creating inventory"));
+            return BadRequest(ApiResponse.ErrorResponse("Failed to create inventory"));
         }
+
+        // UPDATED: Return Ok with list for bulk, no CreatedAtAction (no single ID for redirect)
+        return Ok(ApiResponse<List<InventoryResponse>>.SuccessResponse(inventories, "Inventory created/updated successfully"));
     }
+    catch (InvalidOperationException ex)
+    {
+        _logger.LogWarning(ex, "Inventory creation failed: {Message}", ex.Message);
+        return BadRequest(ApiResponse.ErrorResponse(ex.Message));
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error occurred while creating inventory");
+        return StatusCode(500, ApiResponse.ErrorResponse("An error occurred while creating inventory"));
+    }
+}
 
     [HttpPut("{id}")]
     [Authorize(Policy = "AdminOnly")]

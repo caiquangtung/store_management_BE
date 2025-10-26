@@ -4,7 +4,7 @@ using StoreManagement.API.Models;
 using StoreManagement.Application.DTOs.Suppliers;
 using StoreManagement.Application.Services;
 using System.Linq;
-
+using StoreManagement.Domain.Enums;
 namespace StoreManagement.API.Controllers;
 
 [ApiController]
@@ -24,6 +24,7 @@ public class SuppliersController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAllSuppliers(
         [FromQuery] PaginationParameters pagination,
+        [FromQuery] EntityStatus? status = null,
         [FromQuery] string? searchTerm = null,
         [FromQuery] string? sortBy = null,
         [FromQuery] bool sortDesc = false)
@@ -31,7 +32,7 @@ public class SuppliersController : ControllerBase
         try
         {
             var (suppliers, totalCount) = await _supplierService.GetAllPagedAsync(
-                pagination.PageNumber, pagination.PageSize, searchTerm, sortBy, sortDesc);
+                pagination.PageNumber, pagination.PageSize, status, searchTerm, sortBy, sortDesc);
 
             var pagedResult = PagedResult<SupplierResponse>.Create(suppliers, totalCount, pagination.PageNumber, pagination.PageSize);
             return Ok(ApiResponse<PagedResult<SupplierResponse>>.SuccessResponse(pagedResult, "Suppliers retrieved successfully"));

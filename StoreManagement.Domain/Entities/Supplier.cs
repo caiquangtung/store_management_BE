@@ -1,5 +1,5 @@
 namespace StoreManagement.Domain.Entities;
-
+using StoreManagement.Domain.Enums;
 public class Supplier
 {
     public int SupplierId { get; set; }
@@ -7,7 +7,7 @@ public class Supplier
     public string? Phone { get; set; }
     public string? Email { get; set; }
     public string? Address { get; set; }
-
+    public EntityStatus Status { get; set; } = EntityStatus.Active;
     // Navigation properties
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();
 }

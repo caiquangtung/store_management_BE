@@ -28,6 +28,7 @@ public class Customer
     public string? Email { get; set; }
     public string? Address { get; set; }
     public DateTime CreatedAt { get; set; }
+    public EntityStatus Status { get; set; } = EntityStatus.Active; 
 
     // Navigation properties
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
@@ -117,6 +118,7 @@ Customer entity is configured in StoreDbContext with proper column mappings and 
   - `pageNumber` (optional, default: 1)
   - `pageSize` (optional, default: 10, max: 100)
   - `searchTerm` (optional): Search by name, email, or phone
+  - `status` (optional, Enum: Active, Inactive): Filter by customer status <-- CẬP NHẬT
 - **Response**: PagedResult<CustomerResponse>
 
 ##### GET /api/customer/{id}
@@ -163,7 +165,7 @@ Customer entity is configured in StoreDbContext with proper column mappings and 
 
 ##### PUT /api/customer/{id}
 
-- **Description**: Update existing customer
+- **Description**: Update existing customer, including status (Active/Inactive)
 - **Authorization**: Staff, Admin
 - **Parameters**: `id` (customer ID)
 - **Body**: UpdateCustomerRequest
@@ -171,7 +173,7 @@ Customer entity is configured in StoreDbContext with proper column mappings and 
 
 ##### DELETE /api/customer/{id}
 
-- **Description**: Delete customer
+- **Description**: Soft delete a customer (sets status to 'Deleted') 
 - **Authorization**: Admin only
 - **Parameters**: `id` (customer ID)
 - **Response**: boolean
@@ -362,6 +364,23 @@ GET /api/customer/check-phone/+1234567890
 Authorization: Bearer <jwt-token>
 ```
 
+### Filter Parameters
+
+- `searchTerm` (string, optional): Search across multiple fields
+- `status` (EntityStatus enum, optional): Filter by status (Active, Inactive) 
+
+**Example Requests:**
+
+```bash
+# Search by name
+GET /api/customer?pageNumber=1&pageSize=10&searchTerm=john
+
+# Filter for inactive customers
+GET /api/customer?status=Inactive 
+
+# Search for active customers by email
+GET /api/customer?status=Active&searchTerm=@gmail.com 
+```
 ## Conclusion
 
 The Customer API implementation follows clean architecture principles with proper separation of concerns, comprehensive validation, role-based authorization, and robust error handling. The pagination is handled at the controller level for better performance and flexibility.

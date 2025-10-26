@@ -15,6 +15,7 @@ using StoreManagement.Domain.Interfaces;
 using StoreManagement.Infrastructure.Repositories;
 using StoreManagement.Infrastructure.Extensions;
 using StoreManagement.Application.Common.Interfaces;
+using StoreManagement.Application.Mappings;
 using AutoMapper;
 using StoreManagement.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
@@ -78,6 +79,11 @@ builder.Services.AddValidatorsFromAssemblyContaining<CreatePromotionRequestValid
 builder.Services.AddValidatorsFromAssemblyContaining<UpdatePromotionRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<ValidatePromotionRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<UpdateInventoryRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateOrderRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<AddOrderItemRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateOrderItemRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<ApplyPromotionRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<CheckoutRequestValidator>();
 
 // Add DbContext with connection string from appsettings
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -153,7 +159,8 @@ builder.Services.AddAutoMapper(
     typeof(StoreManagement.Application.Mappings.SupplierMappingProfile),
     typeof(StoreManagement.Application.Mappings.CustomerMappingProfile),
     typeof(StoreManagement.Application.Mappings.PromotionMappingProfile),
-    typeof(StoreManagement.Application.Mappings.InventoryMappingProfile));
+    typeof(StoreManagement.Application.Mappings.InventoryMappingProfile),
+    typeof(StoreManagement.Application.Mappings.OrderMappingProfile));
 
 // Register Application services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -168,6 +175,7 @@ builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<ISupplierService, SupplierService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
 builder.Services.AddScoped<IRepository<Category>, CategoryRepository>();
 builder.Services.AddScoped<IRepository<Supplier>, SupplierRepository>();

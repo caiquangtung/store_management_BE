@@ -18,8 +18,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IPromotionRepository, PromotionRepository>();
-        // services.AddScoped<IOrderRepository, OrderRepository>();
-        // services.AddScoped<IPaymentRepository, PaymentRepository>();
+        services.AddScoped<IOrderRepository, OrderRepository>();
+        services.AddScoped<IPaymentRepository, PaymentRepository>();
 
         // Register infrastructure services
         services.AddScoped<IPasswordService, PasswordService>();

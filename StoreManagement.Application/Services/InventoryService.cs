@@ -64,28 +64,44 @@ public class InventoryService : IInventoryService
         return (mappedItems, totalCount);
     }
 
-    public async Task<InventoryResponse?> CreateAsync(CreateInventoryRequest request)
+    public async Task<List<InventoryResponse>> CreateAsync(CreateInventoryRequest request)
+{
+    if (request.Items == null || !request.Items.Any())
+    {
+        throw new InvalidOperationException("No inventory items provided");
+    }
+
+    var createdItems = new List<InventoryResponse>();
+
+    foreach (var item in request.Items)
     {
         // Upsert logic: Check if entry exists for product_id, update if yes, create if no
-        var existingInventory = await _inventoryRepository.GetByProductIdAsync(request.ProductId);
+        var existingInventory = await _inventoryRepository.GetByProductIdAsync(item.ProductId);
         Inventory inventory;
 
         if (existingInventory != null)
         {
             // Update existing: Add to current quantity (additive for restock)
-            existingInventory.Quantity += request.Quantity;
+            existingInventory.Quantity += item.Quantity;
             inventory = await _inventoryRepository.UpdateAsync(existingInventory);
         }
         else
         {
             // Create new entry
-            inventory = _mapper.Map<Inventory>(request);
+            inventory = new Inventory
+            {
+                ProductId = item.ProductId,
+                Quantity = item.Quantity
+            };
             inventory = await _inventoryRepository.AddAsync(inventory);
         }
 
-        await _inventoryRepository.SaveChangesAsync();
-        return _mapper.Map<InventoryResponse>(inventory);
+        await _inventoryRepository.SaveChangesAsync();  // Save after each item to ensure consistency
+        createdItems.Add(_mapper.Map<InventoryResponse>(inventory));
     }
+
+    return createdItems;
+}
 
     public async Task<InventoryResponse?> UpdateAsync(int id, UpdateInventoryRequest request)
     {

@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Http;
 namespace StoreManagement.Application.DTOs.Products;
-
+using StoreManagement.Domain.Enums;
 public class UpdateProductRequest
 {
     [StringLength(100)]
@@ -14,5 +14,6 @@ public class UpdateProductRequest
     public decimal? Price { get; set; }
     [StringLength(20)]
     public string? Unit { get; set; }
-    public IFormFile? Image { get; set; }  // New field for file update
+    public IFormFile? Image { get; set; }
+    public EntityStatus? Status { get; set; }  // New field for file update
 }
