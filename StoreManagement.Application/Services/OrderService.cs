@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
 using StoreManagement.Application.DTOs.Order;
@@ -79,9 +80,11 @@ public class OrderService : IOrderService
     }
 
     public async Task<(IEnumerable<OrderResponse> Items, int TotalCount)> GetAllPagedAsync(
-        int pageNumber, int pageSize, OrderStatus? status = null, int? userId = null, int? customerId = null)
+        int pageNumber, int pageSize, OrderStatus? status = null, int? userId = null, int? customerId = null,
+        string? sortBy = null, bool sortDesc = false)
     {
-        System.Linq.Expressions.Expression<Func<Order, bool>>? filter = null;
+        // Build filter expression
+        Expression<Func<Order, bool>>? filter = null;
 
         if (status.HasValue || userId.HasValue || customerId.HasValue)
         {
@@ -91,7 +94,25 @@ public class OrderService : IOrderService
                 (!customerId.HasValue || o.CustomerId == customerId);
         }
 
-        var (items, totalCount) = await _orderRepository.GetPagedAsync(pageNumber, pageSize, filter);
+        // Build order expression with whitelist and stable tie-breaker by OrderId
+        Expression<Func<Order, object>> primarySort = (sortBy ?? string.Empty).ToLower() switch
+        {
+            "id" => o => o.OrderId,
+            "orderdate" => o => o.OrderDate,
+            "totalamount" => o => o.TotalAmount ?? 0,
+            "status" => o => o.Status,
+            "customerid" => o => o.CustomerId ?? 0,
+            "userid" => o => o.UserId ?? 0,
+            _ => o => o.OrderId
+        };
+
+        Func<IQueryable<Order>, IOrderedQueryable<Order>> orderBy = q =>
+        {
+            var ordered = sortDesc ? q.OrderByDescending(primarySort) : q.OrderBy(primarySort);
+            return sortDesc ? ordered.ThenByDescending(o => o.OrderId) : ordered.ThenBy(o => o.OrderId);
+        };
+
+        var (items, totalCount) = await _orderRepository.GetPagedAsync(pageNumber, pageSize, filter, orderBy);
         var mappedItems = _mapper.Map<IEnumerable<OrderResponse>>(items);
 
         return (mappedItems, totalCount);

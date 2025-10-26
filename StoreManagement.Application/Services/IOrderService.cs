@@ -8,7 +8,8 @@ public interface IOrderService
     // Order CRUD
     Task<OrderResponse?> GetByIdAsync(int orderId);
     Task<(IEnumerable<OrderResponse> Items, int TotalCount)> GetAllPagedAsync(
-        int pageNumber, int pageSize, OrderStatus? status = null, int? userId = null, int? customerId = null);
+        int pageNumber, int pageSize, OrderStatus? status = null, int? userId = null, int? customerId = null,
+        string? sortBy = null, bool sortDesc = false);
     Task<OrderResponse> CreateAsync(CreateOrderRequest request, int userId);
     Task<OrderResponse?> UpdateAsync(int orderId, UpdateOrderRequest request);
     Task<bool> CancelAsync(int orderId);

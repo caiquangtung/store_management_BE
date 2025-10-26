@@ -30,19 +30,21 @@ public class OrdersController : ControllerBase
     }
 
     /// <summary>
-    /// Get paginated list of orders with filters
+    /// Get paginated list of orders with filters and sorting
     /// </summary>
     [HttpGet]
     public async Task<IActionResult> GetOrders(
         [FromQuery] PaginationParameters pagination,
         [FromQuery] OrderStatus? status = null,
         [FromQuery] int? userId = null,
-        [FromQuery] int? customerId = null)
+        [FromQuery] int? customerId = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] bool sortDesc = false)
     {
         try
         {
             var (orders, totalCount) = await _orderService.GetAllPagedAsync(
-                pagination.PageNumber, pagination.PageSize, status, userId, customerId);
+                pagination.PageNumber, pagination.PageSize, status, userId, customerId, sortBy, sortDesc);
 
             var pagedResult = PagedResult<OrderResponse>.Create(orders, totalCount, pagination.PageNumber, pagination.PageSize);
             return Ok(ApiResponse<PagedResult<OrderResponse>>.SuccessResponse(pagedResult, "Orders retrieved successfully"));
