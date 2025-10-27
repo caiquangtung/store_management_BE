@@ -20,7 +20,9 @@ public class OrderService : IOrderService
     // Method to recalculate order total
     private async Task RecalculateOrderTotalAsync(Order order)
     {
-        var totalAmount = order.OrderItems.Sum(oi => oi.Subtotal);
+        // ⭐ SỬA LỖI CỐT LÕI: Tính TotalAmount từ OrderItems (Tổng tiền hàng)
+        // Đã thay đổi để dùng Quantity * Price, thay vì oi.Subtotal (giả định Subtotal chưa được cập nhật)
+        var totalAmount = order.OrderItems.Sum(oi => oi.Quantity * oi.Price); 
         order.TotalAmount = totalAmount;
 
         // Recalculate discount if promotion exists
@@ -31,14 +33,22 @@ public class OrderService : IOrderService
             {
                 order.DiscountAmount = await CalculateDiscountAsync(promotion, order.TotalAmount.Value);
             }
+            else
+            {
+                // Nếu PromoId tồn tại nhưng không tìm thấy khuyến mãi (hoặc TotalAmount null), set Discount = 0
+                order.DiscountAmount = 0;
+            }
         }
         else
         {
+            // Nếu không có khuyến mãi, set Discount = 0
             order.DiscountAmount = 0;
         }
+
+        // KHÔNG CẦN order.FinalAmount = ... vì trường này không tồn tại
     }
 
-    // Helper method to calculate discount
+    // Helper method to calculate discount (giữ nguyên)
     private Task<decimal> CalculateDiscountAsync(Promotion promotion, decimal orderAmount)
     {
         decimal discount;
@@ -71,7 +81,7 @@ public class OrderService : IOrderService
         _logger = logger;
     }
 
-    // Order CRUD - Basic operations
+    // Order CRUD - Basic operations 
     public async Task<OrderResponse?> GetByIdAsync(int orderId)
     {
         var order = await _orderRepository.GetByIdWithDetailsAsync(orderId);
@@ -115,9 +125,11 @@ public class OrderService : IOrderService
         return _mapper.Map<OrderResponse>(order);
     }
 
+    // ⭐ ĐÃ SỬA: Đảm bảo tải đầy đủ chi tiết và gọi RecalculateTotalAsync
     public async Task<OrderResponse?> UpdateAsync(int orderId, UpdateOrderRequest request)
     {
-        var order = await _orderRepository.GetByIdAsync(orderId);
+        // ⭐ THAY ĐỔI: Sử dụng GetByIdWithDetailsAsync để tải OrderItems
+        var order = await _orderRepository.GetByIdWithDetailsAsync(orderId); 
         if (order == null) return null;
 
         // Chỉ update khi status = Pending
@@ -127,14 +139,18 @@ public class OrderService : IOrderService
         }
 
         order.CustomerId = request.CustomerId;
+        
+        // ⭐ THÊM: Buộc tính toán lại tổng tiền trước khi lưu (Quan trọng cho Bước 3)
+        await RecalculateOrderTotalAsync(order);
+        
         await _orderRepository.UpdateAsync(order);
         await _orderRepository.SaveChangesAsync();
 
-        var updatedOrder = await _orderRepository.GetByIdWithDetailsAsync(orderId);
-        return updatedOrder != null ? _mapper.Map<OrderResponse>(updatedOrder) : null;
+        // Không cần gọi GetByIdWithDetailsAsync lần nữa
+        return _mapper.Map<OrderResponse>(order);
     }
 
-    // Cancel Order
+    // Cancel Order (giữ nguyên)
     public async Task<bool> CancelAsync(int orderId)
     {
         var order = await _orderRepository.GetByIdAsync(orderId);
@@ -147,19 +163,13 @@ public class OrderService : IOrderService
         return true;
     }
 
-    // Order Items Management - WITH INVENTORY RESERVE
-    // ============================================================
-    // TRANSACTION #1: AddOrderItem
-    // - Reserve inventory: Directly deduct Inventory.Quantity
-    // - Add/Update OrderItem in cart
-    // - Update Order.TotalAmount
-    // - All operations wrapped in EF Core Unit of Work transaction
-    // - Rollback if: Inventory insufficient, order not pending, or any update fails
-    // ============================================================
+    // ⭐ ĐÃ SỬA: Đảm bảo tải đầy đủ chi tiết
     public async Task<OrderResponse> AddItemAsync(int orderId, AddOrderItemRequest request)
     {
-        // Validate Order exists and is Pending
-        var order = await _orderRepository.GetByIdAsync(orderId);
+        // ⭐ THAY ĐỔI: Sử dụng GetByIdWithDetailsAsync để tải OrderItems
+        var order = await _orderRepository.GetByIdWithDetailsAsync(orderId); 
+        
+        // Validate Order exists and is Pending (giữ nguyên)
         if (order == null)
         {
             throw new InvalidOperationException("Order not found");
@@ -169,14 +179,14 @@ public class OrderService : IOrderService
             throw new InvalidOperationException("Cannot add items to order that is not pending");
         }
 
-        // Validate Product exists
+        // Validate Product exists (giữ nguyên)
         var product = await _productRepository.GetByIdAsync(request.ProductId);
         if (product == null)
         {
             throw new InvalidOperationException("Product not found");
         }
 
-        // Check Inventory availability
+        // Check Inventory availability (giữ nguyên)
         var inventory = await _inventoryRepository.GetByProductIdAsync(request.ProductId);
         if (inventory == null)
         {
@@ -187,9 +197,6 @@ public class OrderService : IOrderService
             throw new InvalidOperationException($"Insufficient inventory. Available: {inventory.Quantity}, Requested: {request.Quantity}");
         }
 
-        // ============================================================
-        // TRANSACTION START: Reserve inventory and add item
-        // Uses EF Core implicit transaction via SaveChangesAsync()
         // ============================================================
 
         // Reserve inventory: Trừ trực tiếp Quantity (Direct deduction strategy)
@@ -202,7 +209,8 @@ public class OrderService : IOrderService
         {
             // Update existing item
             existingItem.Quantity += request.Quantity;
-            existingItem.Subtotal = existingItem.Quantity * existingItem.Price;
+            // ⭐ ĐÃ SỬA: Tính lại Subtotal từ Quantity * Price
+            existingItem.Subtotal = existingItem.Quantity * existingItem.Price; 
         }
         else
         {
@@ -219,11 +227,8 @@ public class OrderService : IOrderService
         }
 
         // Update Order TotalAmount
-        await RecalculateOrderTotalAsync(order);
+        await RecalculateOrderTotalAsync(order); // Giữ nguyên, đã đúng
 
-        // ============================================================
-        // TRANSACTION COMMIT: Save all changes atomically
-        // Rollback if: Any update fails
         // ============================================================
         await _orderRepository.SaveChangesAsync();
 
@@ -232,20 +237,13 @@ public class OrderService : IOrderService
         return _mapper.Map<OrderResponse>(updatedOrder!);
     }
 
-    // ============================================================
-    // TRANSACTION #2: UpdateOrderItem
-    // - Calculate inventory delta (new qty - old qty)
-    // - Reserve additional inventory if qty increased
-    // - Release inventory if qty decreased
-    // - Update OrderItem quantity & subtotal
-    // - Update Order.TotalAmount
-    // - All operations wrapped in EF Core Unit of Work transaction
-    // - Rollback if: Insufficient inventory, concurrent update, or any failure
-    // ============================================================
+    // ⭐ ĐÃ SỬA: Đảm bảo tải đầy đủ chi tiết
     public async Task<OrderResponse> UpdateItemAsync(int orderId, int itemId, UpdateOrderItemRequest request)
     {
-        // Validate Order exists and is Pending
-        var order = await _orderRepository.GetByIdAsync(orderId);
+        // ⭐ THAY ĐỔI: Sử dụng GetByIdWithDetailsAsync để tải OrderItems
+        var order = await _orderRepository.GetByIdWithDetailsAsync(orderId); 
+        
+        // Validate Order exists and is Pending (giữ nguyên)
         if (order == null)
         {
             throw new InvalidOperationException("Order not found");
@@ -263,16 +261,14 @@ public class OrderService : IOrderService
         }
 
         // ============================================================
-        // TRANSACTION START: Update item with inventory delta
-        // ============================================================
 
-        // Calculate inventory delta (how much we need to adjust)
+        // Calculate inventory delta (how much we need to adjust) (giữ nguyên logic)
         var quantityDelta = request.Quantity - orderItem.Quantity;
 
-        // Handle inventory based on delta
+        // Handle inventory based on delta (giữ nguyên logic)
         if (quantityDelta > 0)
         {
-            if (!orderItem.ProductId.HasValue)
+             if (!orderItem.ProductId.HasValue)
             {
                 throw new InvalidOperationException("Order item has no product ID");
             }
@@ -307,13 +303,12 @@ public class OrderService : IOrderService
 
         // Update OrderItem
         orderItem.Quantity = request.Quantity;
-        orderItem.Subtotal = orderItem.Quantity * orderItem.Price;
+        // ⭐ ĐÃ SỬA: Tính lại Subtotal từ Quantity * Price
+        orderItem.Subtotal = orderItem.Quantity * orderItem.Price; 
 
         // Update Order TotalAmount
-        await RecalculateOrderTotalAsync(order);
+        await RecalculateOrderTotalAsync(order); // Giữ nguyên, đã đúng
 
-        // ============================================================
-        // TRANSACTION COMMIT: Save all changes atomically
         // ============================================================
         await _orderRepository.SaveChangesAsync();
 
@@ -322,18 +317,13 @@ public class OrderService : IOrderService
         return _mapper.Map<OrderResponse>(updatedOrder!);
     }
 
-    // ============================================================
-    // TRANSACTION #3: DeleteOrderItem
-    // - Release inventory: Hoàn lại Inventory.Quantity
-    // - Remove OrderItem from order
-    // - Update Order.TotalAmount
-    // - All operations wrapped in EF Core Unit of Work transaction
-    // - Rollback if: Any update fails
-    // ============================================================
+    // ⭐ ĐÃ SỬA: Đảm bảo tải đầy đủ chi tiết
     public async Task<OrderResponse> DeleteItemAsync(int orderId, int itemId)
     {
-        // Validate Order exists and is Pending
-        var order = await _orderRepository.GetByIdAsync(orderId);
+        // ⭐ THAY ĐỔI: Sử dụng GetByIdWithDetailsAsync để tải OrderItems
+        var order = await _orderRepository.GetByIdWithDetailsAsync(orderId); 
+        
+        // Validate Order exists and is Pending (giữ nguyên)
         if (order == null)
         {
             throw new InvalidOperationException("Order not found");
@@ -343,7 +333,7 @@ public class OrderService : IOrderService
             throw new InvalidOperationException("Cannot delete items from order that is not pending");
         }
 
-        // Validate OrderItem exists
+        // Validate OrderItem exists (giữ nguyên)
         var orderItem = order.OrderItems.FirstOrDefault(oi => oi.OrderItemId == itemId);
         if (orderItem == null)
         {
@@ -351,10 +341,8 @@ public class OrderService : IOrderService
         }
 
         // ============================================================
-        // TRANSACTION START: Release inventory and delete item
-        // ============================================================
 
-        // Release inventory back
+        // Release inventory back (giữ nguyên logic)
         if (orderItem.ProductId.HasValue)
         {
             var inventory = await _inventoryRepository.GetByProductIdAsync(orderItem.ProductId.Value);
@@ -369,96 +357,71 @@ public class OrderService : IOrderService
         order.OrderItems.Remove(orderItem);
 
         // Update Order TotalAmount
-        await RecalculateOrderTotalAsync(order);
+        await RecalculateOrderTotalAsync(order); // Giữ nguyên, đã đúng
 
-        // ============================================================
-        // TRANSACTION COMMIT: Save all changes atomically
         // ============================================================
         await _orderRepository.SaveChangesAsync();
 
         // Return updated order
         var updatedOrder = await _orderRepository.GetByIdWithDetailsAsync(orderId);
         return _mapper.Map<OrderResponse>(updatedOrder!);
-    }
+    }public async Task<OrderResponse> ApplyPromotionAsync(int orderId, ApplyPromotionRequest request)
+{
+    // 1️⃣ Lấy đơn hàng kèm chi tiết
+    var order = await _orderRepository.GetByIdWithDetailsAsync(orderId);
+    if (order == null)
+        throw new InvalidOperationException("Order not found");
 
-    // ============================================================
-    // TRANSACTION #4: ApplyPromotion
-    // - Validate promotion rules (active, date range, usage limit, min amount)
-    // - Calculate DiscountAmount (Percent or Fixed)
-    // - Update Order.PromoId and DiscountAmount
-    // - Recalculate Order.TotalAmount with discount
-    // - All operations wrapped in EF Core Unit of Work transaction
-    // - Rollback if: Promotion invalid, concurrent usage, or any failure
-    // ============================================================
-    // Promotion
-    public async Task<OrderResponse> ApplyPromotionAsync(int orderId, ApplyPromotionRequest request)
-    {
-        // Validate Order exists and is Pending
-        var order = await _orderRepository.GetByIdWithDetailsAsync(orderId);
-        if (order == null)
-        {
-            throw new InvalidOperationException("Order not found");
-        }
-        if (order.Status != OrderStatus.Pending)
-        {
-            throw new InvalidOperationException("Cannot apply promotion to order that is not pending");
-        }
+    if (order.Status != OrderStatus.Pending)
+        throw new InvalidOperationException("Cannot apply promotion to order that is not pending");
 
-        // Get Promotion by code
-        var promotion = await _promotionRepository.GetByPromoCodeAsync(request.PromoCode);
-        if (promotion == null)
-        {
-            throw new InvalidOperationException("Promotion not found");
-        }
+    // 2️⃣ Lấy thông tin khuyến mãi
+    var promotion = await _promotionRepository.GetByPromoCodeAsync(request.PromoCode);
+    if (promotion == null)
+        throw new InvalidOperationException("Promotion not found");
 
-        // Validate Promotion is active
-        if (promotion.Status.ToLower() != "active")
-        {
-            throw new InvalidOperationException("Promotion is not active");
-        }
+    if (!string.Equals(promotion.Status, "active", StringComparison.OrdinalIgnoreCase))
+        throw new InvalidOperationException("Promotion is not active");
 
-        // Validate date range
-        var now = DateTime.Now;
-        if (now < promotion.StartDate)
-        {
-            throw new InvalidOperationException("Promotion has not started yet");
-        }
-        if (now > promotion.EndDate)
-        {
-            throw new InvalidOperationException("Promotion has expired");
-        }
+    var now = DateTime.UtcNow;
+    if (now < promotion.StartDate)
+        throw new InvalidOperationException("Promotion has not started yet");
+    if (now > promotion.EndDate)
+        throw new InvalidOperationException("Promotion has expired");
 
-        // Validate minimum order amount
-        var totalAmount = order.OrderItems.Sum(oi => oi.Subtotal);
-        if (totalAmount < promotion.MinOrderAmount)
-        {
-            throw new InvalidOperationException($"Order amount must be at least {promotion.MinOrderAmount:C}");
-        }
+    // 3️⃣ Bảo đảm có OrderItems
+    if (order.OrderItems == null || !order.OrderItems.Any())
+        throw new InvalidOperationException("Order has no items");
 
-        // Validate usage limit
-        if (promotion.UsageLimit > 0 && promotion.UsedCount >= promotion.UsageLimit)
-        {
-            throw new InvalidOperationException("Promotion usage limit has been reached");
-        }
+    // 4️⃣ Tính lại tổng tiền từ sản phẩm
+    order.TotalAmount = order.OrderItems.Sum(oi => oi.Quantity * oi.Price);
 
-        // Apply promotion to order
-        order.PromoId = promotion.PromoId;
-        await RecalculateOrderTotalAsync(order);
+    // 5️⃣ Kiểm tra tổng tiền tối thiểu
+    if (promotion.MinOrderAmount > 0 && order.TotalAmount < promotion.MinOrderAmount)
+        throw new InvalidOperationException($"Order amount must be at least {promotion.MinOrderAmount:C}");
 
-        // ============================================================
-        // TRANSACTION COMMIT: Save promotion application
-        // ============================================================
-        await _orderRepository.SaveChangesAsync();
+    // 6️⃣ Kiểm tra giới hạn sử dụng
+    if (promotion.UsageLimit > 0 && promotion.UsedCount >= promotion.UsageLimit)
+        throw new InvalidOperationException("Promotion usage limit has been reached");
 
-        // Return updated order
-        var updatedOrder = await _orderRepository.GetByIdWithDetailsAsync(orderId);
-        return _mapper.Map<OrderResponse>(updatedOrder!);
-    }
+    // 7️⃣ Áp dụng mã khuyến mãi
+    order.PromoId = promotion.PromoId;
+    order.DiscountAmount = await CalculateDiscountAsync(promotion, order.TotalAmount ?? 0);
+    
+    // 8️⃣ Lưu thay đổi
+    await _orderRepository.UpdateAsync(order);
+    await _orderRepository.SaveChangesAsync();
+
+    // 9️⃣ Trả kết quả
+    var updatedOrder = await _orderRepository.GetByIdWithDetailsAsync(orderId);
+    return _mapper.Map<OrderResponse>(updatedOrder!);
+}
 
     public async Task<OrderResponse> RemovePromotionAsync(int orderId)
     {
-        // Validate Order exists and is Pending
-        var order = await _orderRepository.GetByIdAsync(orderId);
+        // ⭐ THAY ĐỔI: Sử dụng GetByIdWithDetailsAsync để tải OrderItems
+        var order = await _orderRepository.GetByIdWithDetailsAsync(orderId); 
+        
         if (order == null)
         {
             throw new InvalidOperationException("Order not found");
@@ -468,7 +431,6 @@ public class OrderService : IOrderService
             throw new InvalidOperationException("Cannot remove promotion from order that is not pending");
         }
 
-        // Check if promotion exists
         if (!order.PromoId.HasValue)
         {
             throw new InvalidOperationException("No promotion applied to this order");
@@ -478,117 +440,83 @@ public class OrderService : IOrderService
         order.PromoId = null;
         order.DiscountAmount = 0;
 
-        // Save changes
+        // ⭐ THÊM: Tính toán lại tổng tiền sau khi xóa khuyến mãi
+        await RecalculateOrderTotalAsync(order);
+        
         await _orderRepository.SaveChangesAsync();
 
-        // Return updated order
         var updatedOrder = await _orderRepository.GetByIdWithDetailsAsync(orderId);
         return _mapper.Map<OrderResponse>(updatedOrder!);
     }
 
-    // ============================================================
-    // TRANSACTION #5: Checkout (Core Payment Transaction)
-    // - Validate order is pending & has items
-    // - Double-check inventory for all items
-    // - Validate payment amount matches order total (after discount)
-    // - Create Payment record
-    // - Update Order.Status = Paid
-    // - Increment Promotion.UsedCount (if applicable)
-    // - Commit inventory changes (final deduction already done in AddItem)
-    // - All operations wrapped in EF Core Unit of Work transaction
-    // - Rollback if: Inventory insufficient, payment amount mismatch, or any failure
-    // ============================================================
-    public async Task<OrderResponse> CheckoutAsync(int orderId, CheckoutRequest request)
+    // CheckoutAsync
+public async Task<OrderResponse> CheckoutAsync(int orderId, CheckoutRequest request)
+{
+    var order = await _orderRepository.GetByIdWithDetailsAsync(orderId);
+    if (order == null)
+        throw new InvalidOperationException("Order not found");
+
+    if (order.Status != OrderStatus.Pending)
+        throw new InvalidOperationException("Cannot checkout order that is not pending");
+
+    if (order.OrderItems.Count == 0)
+        throw new InvalidOperationException("Cannot checkout empty order");
+
+    await RecalculateOrderTotalAsync(order);
+        await _orderRepository.UpdateAsync(order);   // ✅ cập nhật lại giá trị tính toán mới
+        await _orderRepository.SaveChangesAsync(); 
+    // kiểm tra tồn kho
+    foreach (var item in order.OrderItems)
     {
-        // 1. Validate Order exists and is Pending
-        var order = await _orderRepository.GetByIdWithDetailsAsync(orderId);
-        if (order == null)
+        if (item.ProductId.HasValue)
         {
-            throw new InvalidOperationException("Order not found");
+            var inventory = await _inventoryRepository.GetByProductIdAsync(item.ProductId.Value);
+            if (inventory == null)
+                throw new InvalidOperationException($"Inventory not found for product ID: {item.ProductId.Value}");
+            if (inventory.Quantity < 0)
+                throw new InvalidOperationException($"Insufficient inventory for product ID: {item.ProductId.Value}");
         }
-        if (order.Status != OrderStatus.Pending)
-        {
-            throw new InvalidOperationException("Cannot checkout order that is not pending");
-        }
-
-        // 2. Validate Order has items
-        if (order.OrderItems.Count == 0)
-        {
-            throw new InvalidOperationException("Cannot checkout empty order");
-        }
-
-        // 3. Double-check inventory for all items
-        // Note: Inventory is already deducted during AddItem (Direct deduction strategy)
-        // This is just a final verification before committing payment
-        foreach (var item in order.OrderItems)
-        {
-            if (item.ProductId.HasValue)
-            {
-                var inventory = await _inventoryRepository.GetByProductIdAsync(item.ProductId.Value);
-                if (inventory == null)
-                {
-                    throw new InvalidOperationException($"Inventory not found for product ID: {item.ProductId.Value}");
-                }
-                // Verify inventory is not negative (prevent overselling)
-                if (inventory.Quantity < 0)
-                {
-                    throw new InvalidOperationException($"Insufficient inventory for product ID: {item.ProductId.Value}");
-                }
-            }
-        }
-
-        // 4. Validate payment amount (must be equal to final amount after discount)
-        var finalAmount = order.TotalAmount - order.DiscountAmount;
-        if (request.Amount != finalAmount)
-        {
-            throw new InvalidOperationException($"Payment amount {request.Amount:C} does not match order amount {finalAmount:C}");
-        }
-
-        // 5. Parse PaymentMethod enum
-        if (!Enum.TryParse<PaymentMethod>(request.PaymentMethod, true, out var paymentMethod))
-        {
-            throw new InvalidOperationException($"Invalid payment method: {request.PaymentMethod}");
-        }
-
-        // ============================================================
-        // TRANSACTION START: Process payment and complete order
-        // ============================================================
-
-        // 6. Create Payment record
-        var payment = new Payment
-        {
-            OrderId = orderId,
-            Amount = request.Amount,
-            PaymentMethod = paymentMethod,
-            PaymentDate = DateTime.UtcNow
-        };
-        await _paymentRepository.AddAsync(payment);
-
-        // 7. Update Order status to Paid
-        order.Status = OrderStatus.Paid;
-
-        // 8. Increment Promotion.UsedCount if applicable
-        if (order.PromoId.HasValue)
-        {
-            var promotion = await _promotionRepository.GetByIdAsync(order.PromoId.Value);
-            if (promotion != null)
-            {
-                promotion.UsedCount++;
-                await _promotionRepository.UpdateAsync(promotion);
-            }
-        }
-        // 9. Save all changes (Transaction handled by EF Core Unit of Work)
-        // ============================================================
-        // TRANSACTION COMMIT: Save all changes atomically
-        // - Commit payment record
-        // - Commit order status change
-        // - Commit promotion usage increment
-        // - Rollback if: Any operation fails
-        // ============================================================
-        await _orderRepository.SaveChangesAsync();
-
-        // 10. Return updated order with payment details
-        var updatedOrder = await _orderRepository.GetByIdWithDetailsAsync(orderId);
-        return _mapper.Map<OrderResponse>(updatedOrder!);
     }
+
+    var finalAmount = order.TotalAmount - order.DiscountAmount;
+    if (finalAmount < 0) finalAmount = 0;
+
+    if (request.Amount != finalAmount)
+        throw new InvalidOperationException($"Payment amount {request.Amount:C} does not match order amount {finalAmount:C}");
+
+    if (!Enum.TryParse<PaymentMethod>(request.PaymentMethod, true, out var paymentMethod))
+        throw new InvalidOperationException($"Invalid payment method: {request.PaymentMethod}");
+
+    // ✅ Lưu khách hàng
+    if (request.CustomerId.HasValue)
+        order.CustomerId = request.CustomerId;
+
+    var payment = new Payment
+    {
+        OrderId = orderId,
+        Amount = request.Amount,
+        PaymentMethod = paymentMethod,
+        PaymentDate = DateTime.UtcNow
+    };
+    await _paymentRepository.AddAsync(payment);
+
+    order.Status = OrderStatus.Paid;
+
+    if (order.PromoId.HasValue)
+    {
+        var promotion = await _promotionRepository.GetByIdAsync(order.PromoId.Value);
+        if (promotion != null)
+        {
+            promotion.UsedCount++;
+            await _promotionRepository.UpdateAsync(promotion);
+        }
+    }
+
+    await _orderRepository.SaveChangesAsync();
+
+    var updatedOrder = await _orderRepository.GetByIdWithDetailsAsync(orderId);
+    return _mapper.Map<OrderResponse>(updatedOrder!);
+}
+
+
 }

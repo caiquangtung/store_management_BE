@@ -210,10 +210,12 @@ public class OrdersController : ControllerBase
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                
                 return BadRequest(ApiResponse<object>.ValidationErrorResponse(errors));
             }
 
             var order = await _orderService.UpdateItemAsync(id, itemId, request);
+            
             return Ok(ApiResponse<OrderResponse>.SuccessResponse(order, "Order item updated successfully"));
         }
         catch (InvalidOperationException ex)
@@ -308,7 +310,8 @@ public class OrdersController : ControllerBase
     /// </summary>
     [HttpPost("{id}/checkout")]
     public async Task<IActionResult> Checkout(int id, [FromBody] CheckoutRequest request)
-    {
+    {   
+      
         try
         {
             if (!ModelState.IsValid)

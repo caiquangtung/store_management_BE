@@ -23,5 +23,6 @@ public interface IOrderService
     Task<OrderResponse> RemovePromotionAsync(int orderId);
 
     // Checkout & Payment
-    Task<OrderResponse> CheckoutAsync(int orderId, CheckoutRequest request);
+    Task<OrderResponse> CheckoutAsync(int orderId, CheckoutRequest   request);
+    
 }
