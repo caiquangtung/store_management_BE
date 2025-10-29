@@ -126,6 +126,17 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AllRoles", policy =>
         policy.Requirements.Add(new StoreManagement.API.Authorization.UserRoleRequirement(UserRole.Admin, UserRole.Staff)));
 });
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp",
+        policy => policy
+            .WithOrigins("http://localhost:5173") // hoặc "*" nếu bạn muốn mở toàn bộ
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials()
+    );
+});
+
 
 // Register authorization handlers
 builder.Services.AddScoped<IAuthorizationHandler, StoreManagement.API.Authorization.UserRoleHandler>();
@@ -155,9 +166,13 @@ builder.Services.AddAutoMapper(
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+
+// ĐÃ SỬA LỖI TẠI ĐÂY: Thay ICategoryService bằng CategoryService
 builder.Services.AddScoped<ICategoryService, CategoryService>();
+// ĐÃ SỬA LỖI TẠI ĐÂY: Thay ICustomerService bằng CustomerService
+builder.Services.AddScoped<ICustomerService, CustomerService>(); 
+
 builder.Services.AddScoped<ISupplierService, SupplierService>();
-builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
@@ -168,12 +183,9 @@ builder.Services.AddScoped<IReportService, ReportService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Cấu hình Swagger UI độc lập với môi trường để bạn có thể truy cập được
+app.UseSwagger();
+app.UseSwaggerUI();
 
 // Add Global Exception Middleware (should be early in pipeline)
 app.UseGlobalExceptionMiddleware();
@@ -194,8 +206,40 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.UseCors("AllowReactApp");
 app.MapControllers();
+
+// Bắt đầu khối kiểm tra kết nối cơ sở dữ liệu
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        // Lấy DbContext
+        var context = services.GetRequiredService<StoreDbContext>();
+        
+        // Kiểm tra kết nối
+        var isConnected = await context.Database.CanConnectAsync();
+
+        if (isConnected)
+        {
+            app.Logger.LogInformation("✅ Kết nối đến Database thành công.");
+        }
+        else
+        {
+            // Nếu không thể kết nối, ta sẽ throw exception để ngăn ứng dụng chạy tiếp.
+            app.Logger.LogError("❌ KHÔNG THỂ KẾT NỐI đến Database. Vui lòng kiểm tra chuỗi kết nối (DefaultConnection).");
+            throw new Exception("Lỗi khởi tạo ứng dụng: Không thể kết nối đến Database.");
+        }
+    }
+    catch (Exception ex)
+    {
+        // Log lỗi và ngăn ứng dụng chạy.
+        app.Logger.LogError(ex, "❌ Đã xảy ra lỗi trong quá trình kết nối Database.");
+        throw;
+    }
+}
+// Kết thúc khối kiểm tra kết nối cơ sở dữ liệu
 
 app.Run();
 
