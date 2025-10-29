@@ -10,6 +10,7 @@ public interface IProductRepository : IRepository<Product>
     Task<Product?> GetBySKUAsync(string sku);
     Task<bool> SKUExistsAsync(string sku);
     Task<IEnumerable<ABCData>> GetABCAnalysisDataAsync(DateTime? fromDate = null, DateTime? toDate = null);  // Updated with date filters
+    Task<IEnumerable<Product>> GetDeadStockProductsAsync(DateTime startDate, DateTime endDate);
 }
 
 public class ABCData  // Helper class for raw ABC data

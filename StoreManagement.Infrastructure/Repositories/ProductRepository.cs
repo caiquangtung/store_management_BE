@@ -62,4 +62,20 @@ public class ProductRepository : BaseRepository<Product>, IProductRepository
 
         return await query.ToListAsync();
     }
+    public async Task<IEnumerable<Product>> GetDeadStockProductsAsync(DateTime startDate, DateTime endDate)
+    {
+        // Lấy danh sách ID các sản phẩm đã được bán trong khoảng thời gian
+        var soldProductIds = await _context.OrderItems
+            .Include(oi => oi.Order)
+            .Where(oi => oi.Order != null && oi.Order.OrderDate >= startDate && oi.Order.OrderDate <= endDate)
+            .Select(oi => oi.ProductId)
+            .Distinct()
+            .ToListAsync();
+
+        // Lấy các sản phẩm không nằm trong danh sách đã bán
+        return await _dbSet
+            .Include(p => p.Inventory) // Lấy thông tin tồn kho
+            .Where(p => !soldProductIds.Contains(p.ProductId))
+            .ToListAsync();
+    }
 }

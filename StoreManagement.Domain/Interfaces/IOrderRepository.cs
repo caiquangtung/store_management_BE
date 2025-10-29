@@ -1,7 +1,11 @@
 using StoreManagement.Domain.Entities;
-
 namespace StoreManagement.Domain.Interfaces;
-
+public class SalesSummaryRawData
+{
+    public string Period { get; set; } = string.Empty;
+    public decimal TotalRevenue { get; set; }
+    public int NumberOfOrders { get; set; }
+}
 public interface IOrderRepository : IRepository<Order>
 {
     Task<IEnumerable<Order>> GetByCustomerAsync(int customerId);
@@ -11,4 +15,5 @@ public interface IOrderRepository : IRepository<Order>
 
     // NEW: Method để load Order với OrderItems và navigation properties
     Task<Order?> GetByIdWithDetailsAsync(int orderId);
+    Task<IEnumerable<SalesSummaryRawData>> GetSalesOverviewAsync(DateTime startDate, DateTime endDate, string groupBy);
 }

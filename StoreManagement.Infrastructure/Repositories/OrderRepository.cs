@@ -105,4 +105,53 @@ public class OrderRepository : BaseRepository<Order>, IOrderRepository
 
         return (items, totalCount);
     }
+    public async Task<IEnumerable<SalesSummaryRawData>> GetSalesOverviewAsync(DateTime startDate, DateTime endDate, string groupBy)
+    {
+        var query = _dbSet
+            .Where(o => o.Status == Domain.Enums.OrderStatus.Paid && o.OrderDate >= startDate && o.OrderDate.Date <= endDate);
+
+        if (groupBy.Equals("month", StringComparison.OrdinalIgnoreCase))
+        {
+            var data = await query
+                .GroupBy(o => new { o.OrderDate.Year, o.OrderDate.Month })
+                .Select(g => new 
+                {
+                    g.Key.Year,
+                    g.Key.Month,
+                    TotalRevenue = g.Sum(o => (o.TotalAmount ?? 0) - o.DiscountAmount),
+                    NumberOfOrders = g.Count()
+                })
+                .OrderBy(r => r.Year).ThenBy(r => r.Month)
+                .ToListAsync();
+            
+            // Định dạng chuỗi Period ở phía ứng dụng
+            return data.Select(d => new SalesSummaryRawData
+            {
+                Period = $"{d.Year}-{d.Month:D2}",
+                TotalRevenue = d.TotalRevenue,
+                NumberOfOrders = d.NumberOfOrders
+            });
+        }
+        else // Mặc định là 'day'
+        {
+            var data = await query
+                .GroupBy(o => o.OrderDate.Date)
+                .Select(g => new
+                {
+                    Date = g.Key,
+                    TotalRevenue = g.Sum(o => (o.TotalAmount ?? 0) - o.DiscountAmount),
+                    NumberOfOrders = g.Count()
+                })
+                .OrderBy(r => r.Date)
+                .ToListAsync();
+
+            // Định dạng chuỗi Period ở phía ứng dụng
+            return data.Select(d => new SalesSummaryRawData
+            {
+                Period = d.Date.ToString("yyyy-MM-dd"),
+                TotalRevenue = d.TotalRevenue,
+                NumberOfOrders = d.NumberOfOrders
+            });
+        }
+    }
 }
