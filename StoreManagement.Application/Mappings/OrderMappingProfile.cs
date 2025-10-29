@@ -9,7 +9,7 @@ public class OrderMappingProfile : Profile
 {
     public OrderMappingProfile()
     {
-        // Order -> OrderResponse
+        // ✅ Order -> OrderResponse
         CreateMap<Order, OrderResponse>()
             .ForMember(dest => dest.OrderId, opt => opt.MapFrom(src => src.OrderId))
             .ForMember(dest => dest.CustomerId, opt => opt.MapFrom(src => src.CustomerId))
@@ -22,12 +22,11 @@ public class OrderMappingProfile : Profile
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
             .ForMember(dest => dest.TotalAmount, opt => opt.MapFrom(src => src.TotalAmount))
             .ForMember(dest => dest.DiscountAmount, opt => opt.MapFrom(src => src.DiscountAmount))
-            .ForMember(dest => dest.FinalAmount, opt => opt.MapFrom(src =>
-                (src.TotalAmount ?? 0) - src.DiscountAmount))
+            .ForMember(dest => dest.FinalAmount, opt => opt.MapFrom(src => (src.TotalAmount ?? 0) - src.DiscountAmount))
             .ForMember(dest => dest.OrderItems, opt => opt.MapFrom(src => src.OrderItems))
             .ForMember(dest => dest.Payments, opt => opt.MapFrom(src => src.Payments));
 
-        // OrderItem -> OrderItemResponse
+        // ✅ OrderItem -> OrderItemResponse
         CreateMap<OrderItem, OrderItemResponse>()
             .ForMember(dest => dest.OrderItemId, opt => opt.MapFrom(src => src.OrderItemId))
             .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.ProductId ?? 0))
@@ -37,7 +36,7 @@ public class OrderMappingProfile : Profile
             .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Price))
             .ForMember(dest => dest.Subtotal, opt => opt.MapFrom(src => src.Subtotal));
 
-        // Payment -> PaymentResponse
+        // ✅ Payment -> PaymentResponse
         CreateMap<Payment, PaymentResponse>()
             .ForMember(dest => dest.PaymentId, opt => opt.MapFrom(src => src.PaymentId))
             .ForMember(dest => dest.OrderId, opt => opt.MapFrom(src => src.OrderId))
@@ -45,7 +44,7 @@ public class OrderMappingProfile : Profile
             .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => src.PaymentMethod.ToString()))
             .ForMember(dest => dest.PaymentDate, opt => opt.MapFrom(src => src.PaymentDate));
 
-        // CreateOrderRequest -> Order
+        // ✅ CreateOrderRequest -> Order
         CreateMap<CreateOrderRequest, Order>()
             .ForMember(dest => dest.OrderId, opt => opt.Ignore())
             .ForMember(dest => dest.UserId, opt => opt.Ignore())
@@ -60,7 +59,7 @@ public class OrderMappingProfile : Profile
             .ForMember(dest => dest.OrderItems, opt => opt.Ignore())
             .ForMember(dest => dest.Payments, opt => opt.Ignore());
 
-        // UpdateOrderRequest -> Order
+        // ✅ UpdateOrderRequest -> Order
         CreateMap<UpdateOrderRequest, Order>(MemberList.None);
     }
 }

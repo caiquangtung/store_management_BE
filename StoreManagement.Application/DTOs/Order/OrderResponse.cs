@@ -8,7 +8,7 @@ public class OrderResponse
     public int? UserId { get; set; }
     public string? UserName { get; set; }
     public int? PromoId { get; set; }
-    public string? PromoCode { get; set; }
+     public string? PromoCode { get; set; }
     public DateTime OrderDate { get; set; }
     public string Status { get; set; } = string.Empty;
     public decimal? TotalAmount { get; set; }
