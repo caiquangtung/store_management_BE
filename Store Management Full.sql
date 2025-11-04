@@ -111,6 +111,56 @@ CREATE TABLE payments (
     payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE purchases (
+    purchase_id INT AUTO_INCREMENT PRIMARY KEY,
+    supplier_id INT NULL,
+    user_id INT NULL COMMENT 'Người dùng tạo đơn nhập hàng',
+    status ENUM('pending', 'confirmed', 'canceled') NOT NULL DEFAULT 'pending',
+    total_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+    notes TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_purchases_supplier
+        FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id)
+        ON DELETE SET NULL,
+    CONSTRAINT fk_purchases_user
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
+        ON DELETE SET NULL
+);
+
+CREATE TABLE purchase_items (
+    purchase_item_id INT AUTO_INCREMENT PRIMARY KEY,
+    purchase_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL,
+    purchase_price DECIMAL(10,2) NOT NULL COMMENT 'Giá nhập tại thời điểm mua',
+    subtotal DECIMAL(10,2) GENERATED ALWAYS AS (quantity * purchase_price) STORED,
+    
+    CONSTRAINT fk_purchase_items_purchase
+        FOREIGN KEY (purchase_id) REFERENCES purchases(purchase_id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_purchase_items_product
+        FOREIGN KEY (product_id) REFERENCES products(product_id)
+        ON DELETE RESTRICT -- Ngăn xóa sản phẩm nếu đã có lịch sử nhập hàng
+);
+
+CREATE TABLE inventory_adjustments (
+    adjustment_id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    user_id INT NULL COMMENT 'Người dùng thực hiện điều chỉnh',
+    quantity INT NOT NULL COMMENT 'Số lượng điều chỉnh (âm hoặc dương)',
+    reason VARCHAR(255) NOT NULL COMMENT 'Lý do: hỏng, mất, trả hàng, kiểm kho...',
+    notes TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_adjustments_product
+        FOREIGN KEY (product_id) REFERENCES products(product_id)
+        ON DELETE CASCADE, -- Nếu xóa sản phẩm thì xóa luôn lịch sử điều chỉnh
+    CONSTRAINT fk_adjustments_user
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
+        ON DELETE SET NULL -- Giữ lại lịch sử điều chỉnh dù user bị xóa
+);
 -- DATA USERS
 INSERT INTO users (username, password, full_name, role, status) VALUES
 ('admin', '$2a$11$4ySutzLtb1UjIXpa8kRqsenXGsN0JvFv5ahQGu0j5ryPzZvZVHC2G', 'Quản trị viên', 'admin', 'active'),
@@ -203,3 +253,19 @@ INSERT INTO order_items (order_id,product_id,quantity,price,subtotal) VALUES
 -- DATA PAYMENTS
 INSERT INTO payments (order_id,amount,payment_method) VALUES
 (1, 1192330, 'cash'),(2, 1731608, 'e-wallet'),(3, 720782, 'e-wallet'),(4, 0, 'card'),(5, 94180, 'cash'),(6, 3788671, 'cash'),(7, 410075.2, 'e-wallet'),(8, 1543526.1, 'cash'),(9, 2484051, 'cash'),(10, 970239, 'card'),(11, 1532741, 'e-wallet'),(12, 1785354, 'card'),(13, 1488276, 'card'),(14, 2846096, 'cash'),(15, 158100.0, 'card'),(16, 974090, 'cash'),(17, 467148, 'cash'),(18, 394342, 'e-wallet'),(19, 1670791.45, 'card'),(20, 2889813, 'card'),(21, 2288406, 'cash'),(22, 331008, 'e-wallet'),(23, 1831623.35, 'cash'),(24, 967883.1, 'e-wallet'),(25, 293847, 'cash'),(26, 208526.4, 'cash'),(27, 933199, 'cash'),(28, 2609123, 'card'),(29, 1925033.6, 'cash'),(30, 2912134, 'card');
+
+INSERT INTO purchases (purchase_id, supplier_id, user_id, status, total_amount, notes) VALUES
+(1, 1, 2, 'confirmed', 2150000, 'Nhập hàng Coca và Pepsi đợt 1'),
+(2, 2, 1, 'pending', 1206537, 'Đợt nhập Red Bull và Oreo');
+
+INSERT INTO purchase_items (purchase_id, product_id, quantity, purchase_price) VALUES
+-- Đơn 1 (Confirmed)
+(1, 1, 5, 250000), -- 5 Coca Cola lon, giá nhập 250,000
+(1, 2, 10, 90000), -- 10 Pepsi lon, giá nhập 90,000
+-- Đơn 2 (Pending)
+(2, 5, 3, 300000), -- 3 Red Bull, giá nhập 300,000
+(2, 6, 2, 153268.5); -- 2 Bánh Oreo, giá nhập 153,268.5
+
+INSERT INTO inventory_adjustments (product_id, user_id, quantity, reason, notes) VALUES
+(3, 1, -2, 'Hàng hỏng', 'Phát hiện vỡ 2 chai Trà Xanh 0 độ khi dọn kho'),
+(8, 2, 3, 'Kiểm kho', 'Kiểm kho phát hiện thừa 3 gói Kẹo Alpenliebe so với hệ thống');

@@ -22,6 +22,8 @@ using Microsoft.AspNetCore.Authorization;
 using StoreManagement.Domain.Entities;
 using Microsoft.Extensions.FileProviders;
 using System.IO;
+using StoreManagement.Application.DTOs.Purchase; 
+using StoreManagement.Application.DTOs.InventoryAdjustment; 
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -84,6 +86,8 @@ builder.Services.AddValidatorsFromAssemblyContaining<AddOrderItemRequestValidato
 builder.Services.AddValidatorsFromAssemblyContaining<UpdateOrderItemRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<ApplyPromotionRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<CheckoutRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreatePurchaseRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateAdjustmentRequestValidator>();
 
 // Add DbContext with connection string from appsettings
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -160,7 +164,11 @@ builder.Services.AddAutoMapper(
     typeof(StoreManagement.Application.Mappings.CustomerMappingProfile),
     typeof(StoreManagement.Application.Mappings.PromotionMappingProfile),
     typeof(StoreManagement.Application.Mappings.InventoryMappingProfile),
-    typeof(StoreManagement.Application.Mappings.OrderMappingProfile));
+    typeof(StoreManagement.Application.Mappings.OrderMappingProfile),
+
+    typeof(StoreManagement.Application.Mappings.PurchaseMappingProfile),
+    typeof(StoreManagement.Application.Mappings.InventoryAdjustmentMappingProfile));
+    
 
 // Register Application services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -180,6 +188,8 @@ builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
 builder.Services.AddScoped<IRepository<Category>, CategoryRepository>();
 builder.Services.AddScoped<IRepository<Supplier>, SupplierRepository>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IPurchaseService, PurchaseService>();
+builder.Services.AddScoped<IInventoryAdjustmentService, InventoryAdjustmentService>();
 
 var app = builder.Build();
 

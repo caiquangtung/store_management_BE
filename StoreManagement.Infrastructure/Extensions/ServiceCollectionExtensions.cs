@@ -21,6 +21,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<IPaymentRepository, PaymentRepository>();
 
+        services.AddScoped<IPurchaseRepository, PurchaseRepository>();
+        services.AddScoped<IInventoryAdjustmentRepository, InventoryAdjustmentRepository>();
+        
         // Register infrastructure services
         services.AddScoped<IPasswordService, PasswordService>();
         services.AddScoped<IJwtService, JwtService>(provider =>

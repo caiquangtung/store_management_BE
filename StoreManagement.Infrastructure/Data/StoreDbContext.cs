@@ -22,6 +22,10 @@ public class StoreDbContext : DbContext
     public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<Payment> Payments { get; set; }
 
+    public DbSet<Purchase> Purchases { get; set; }
+    public DbSet<PurchaseItem> PurchaseItems { get; set; }
+    public DbSet<InventoryAdjustment> InventoryAdjustments { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -254,6 +258,84 @@ public class StoreDbContext : DbContext
             entity.HasQueryFilter(c => c.Status != EntityStatus.Deleted);
         });
 
+        modelBuilder.Entity<Purchase>(entity =>
+        {
+            entity.ToTable("purchases");
+            entity.HasKey(e => e.PurchaseId);
+            entity.Property(e => e.PurchaseId).HasColumnName("purchase_id");
+            entity.Property(e => e.SupplierId).HasColumnName("supplier_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.Status).HasColumnName("status").HasConversion<string>();
+            entity.Property(e => e.TotalAmount).HasColumnName("total_amount").HasColumnType("decimal(10,2)");
+            entity.Property(e => e.Notes).HasColumnName("notes");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+            // Foreign keys
+            entity.HasOne(e => e.Supplier)
+                .WithMany() // Giả định Supplier không cần nav tới Purchases
+                .HasForeignKey(e => e.SupplierId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.User)
+                .WithMany() // Giả định User không cần nav tới Purchases
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<PurchaseItem>(entity =>
+        {
+            entity.ToTable("purchase_items");
+            entity.HasKey(e => e.PurchaseItemId);
+            entity.Property(e => e.PurchaseItemId).HasColumnName("purchase_item_id");
+            entity.Property(e => e.PurchaseId).HasColumnName("purchase_id");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.Quantity).HasColumnName("quantity");
+            entity.Property(e => e.PurchasePrice).HasColumnName("purchase_price").HasColumnType("decimal(10,2)");
+
+            // Cấu hình cột Subtotal như một cột được TÍNH TOÁN (như trong SQL của bạn)
+            entity.Property(e => e.Subtotal)
+                .HasColumnName("subtotal")
+                .HasColumnType("decimal(10,2)")
+                .ValueGeneratedOnAddOrUpdate() // Chỉ định đây là cột được tính toán
+                .HasComputedColumnSql("(`quantity` * `purchase_price`)", stored: true); // SQL logic
+
+            // Foreign keys
+            entity.HasOne(e => e.Purchase)
+                .WithMany(p => p.PurchaseItems) // Liên kết với collection trong Purchase
+                .HasForeignKey(e => e.PurchaseId)
+                .OnDelete(DeleteBehavior.Cascade); // Xóa items nếu xóa purchase
+
+            entity.HasOne(e => e.Product)
+                .WithMany() // Giả định Product không cần nav tới PurchaseItems
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict); // Ngăn xóa Product nếu có lịch sử nhập
+        });
+        
+        modelBuilder.Entity<InventoryAdjustment>(entity =>
+        {
+            entity.ToTable("inventory_adjustments");
+            entity.HasKey(e => e.AdjustmentId);
+            entity.Property(e => e.AdjustmentId).HasColumnName("adjustment_id");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.Quantity).HasColumnName("quantity");
+            entity.Property(e => e.Reason).HasColumnName("reason").HasMaxLength(255);
+            entity.Property(e => e.Notes).HasColumnName("notes");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            // Foreign keys
+            entity.HasOne(e => e.Product)
+                .WithMany() // Giả định Product không cần nav tới Adjustments
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.User)
+                .WithMany() // Giả định User không cần nav tới Adjustments
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
         // Configure primary keys
         modelBuilder.Entity<User>().HasKey(e => e.UserId);
         modelBuilder.Entity<Customer>().HasKey(e => e.CustomerId);
@@ -265,5 +347,9 @@ public class StoreDbContext : DbContext
         modelBuilder.Entity<Order>().HasKey(e => e.OrderId);
         modelBuilder.Entity<OrderItem>().HasKey(e => e.OrderItemId);
         modelBuilder.Entity<Payment>().HasKey(e => e.PaymentId);
+
+        modelBuilder.Entity<Purchase>().HasKey(e => e.PurchaseId);
+        modelBuilder.Entity<PurchaseItem>().HasKey(e => e.PurchaseItemId);
+        modelBuilder.Entity<InventoryAdjustment>().HasKey(e => e.AdjustmentId);
     }
 }
