@@ -3,6 +3,7 @@ using StoreManagement.Domain.Entities;
 using StoreManagement.Domain.Interfaces;
 using StoreManagement.Infrastructure.Data;
 using StoreManagement.Infrastructure.Repositories;
+using System.Linq.Expressions;
 
 namespace StoreManagement.Infrastructure.Repositories;
 
@@ -114,7 +115,7 @@ public class OrderRepository : BaseRepository<Order>, IOrderRepository
         {
             var data = await query
                 .GroupBy(o => new { o.OrderDate.Year, o.OrderDate.Month })
-                .Select(g => new 
+                .Select(g => new
                 {
                     g.Key.Year,
                     g.Key.Month,
@@ -123,7 +124,7 @@ public class OrderRepository : BaseRepository<Order>, IOrderRepository
                 })
                 .OrderBy(r => r.Year).ThenBy(r => r.Month)
                 .ToListAsync();
-            
+
             // Định dạng chuỗi Period ở phía ứng dụng
             return data.Select(d => new SalesSummaryRawData
             {
@@ -153,5 +154,23 @@ public class OrderRepository : BaseRepository<Order>, IOrderRepository
                 NumberOfOrders = d.NumberOfOrders
             });
         }
+    }
+    
+    public async Task<IEnumerable<OrderItem>> GetLedgerMovementsAsync(int productId, DateTime? startDate, DateTime? endDate)
+    {
+        var query = _context.OrderItems
+            .Include(oi => oi.Order)
+            .Where(oi => oi.ProductId == productId && oi.Order != null && oi.Order.Status == Domain.Enums.OrderStatus.Paid);
+
+        if (startDate.HasValue)
+        {
+            query = query.Where(oi => oi.Order!.OrderDate >= startDate.Value);
+        }
+        if (endDate.HasValue)
+        {
+            query = query.Where(oi => oi.Order!.OrderDate < endDate.Value);
+        }
+
+        return await query.ToListAsync();
     }
 }

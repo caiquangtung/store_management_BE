@@ -16,4 +16,5 @@ public interface IOrderRepository : IRepository<Order>
     // NEW: Method để load Order với OrderItems và navigation properties
     Task<Order?> GetByIdWithDetailsAsync(int orderId);
     Task<IEnumerable<SalesSummaryRawData>> GetSalesOverviewAsync(DateTime startDate, DateTime endDate, string groupBy);
+    Task<IEnumerable<OrderItem>> GetLedgerMovementsAsync(int productId, DateTime? startDate, DateTime? endDate);
 }
