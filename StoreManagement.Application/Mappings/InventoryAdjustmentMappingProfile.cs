@@ -15,6 +15,6 @@ public class InventoryAdjustmentMappingProfile : Profile
         // Entity -> Response
         CreateMap<InventoryAdjustment, AdjustmentResponse>()
             .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product != null ? src.Product.ProductName : string.Empty))
-            .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User != null ? src.User.FullName : null));
+            .ForMember(dest => dest.StaffName, opt => opt.MapFrom(src => src.User != null ? src.User.FullName : null));
     }
 }
