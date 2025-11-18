@@ -21,7 +21,7 @@ public class PromotionController : ControllerBase
     /// Get all promotions with pagination and search
     /// </summary>
     [HttpGet]
-    [Authorize(Policy = "AdminOrStaff")]
+    [AllowAnonymous]
     public async Task<ActionResult<ApiResponse<PagedResult<PromotionResponse>>>> GetPromotions(
         [FromQuery] PaginationParameters pagination,
         [FromQuery] string? searchTerm = null,
@@ -57,7 +57,7 @@ public class PromotionController : ControllerBase
     /// Get promotion by ID
     /// </summary>
     [HttpGet("{id}")]
-    [Authorize(Policy = "AdminOrStaff")]
+    [AllowAnonymous]
     public async Task<ActionResult<ApiResponse<PromotionResponse>>> GetPromotion(int id)
     {
         try
@@ -93,7 +93,7 @@ public class PromotionController : ControllerBase
     /// Get promotion by promo code
     /// </summary>
     [HttpGet("by-code/{promoCode}")]
-    [Authorize(Policy = "AdminOrStaff")]
+    [AllowAnonymous]
     public async Task<ActionResult<ApiResponse<PromotionResponse>>> GetPromotionByCode(string promoCode)
     {
         try
@@ -129,7 +129,7 @@ public class PromotionController : ControllerBase
     /// Get active promotions
     /// </summary>
     [HttpGet("active")]
-    [Authorize(Policy = "AdminOrStaff")]
+    [AllowAnonymous]
     public async Task<ActionResult<ApiResponse<IEnumerable<PromotionResponse>>>> GetActivePromotions()
     {
         try
@@ -156,7 +156,7 @@ public class PromotionController : ControllerBase
     /// Check if promo code exists
     /// </summary>
     [HttpGet("check-code/{promoCode}")]
-    [Authorize(Policy = "AdminOrStaff")]
+    [AllowAnonymous]
     public async Task<ActionResult<ApiResponse<bool>>> CheckPromoCodeExists(string promoCode)
     {
         try

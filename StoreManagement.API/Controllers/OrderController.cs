@@ -10,7 +10,7 @@ namespace StoreManagement.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Policy = "AdminOrStaff")]
+// [Authorize(Policy = "AdminOrStaff")]
 public class OrdersController : ControllerBase
 {
     private readonly IOrderService _orderService;
@@ -33,6 +33,7 @@ public class OrdersController : ControllerBase
     /// Get paginated list of orders with filters and sorting
     /// </summary>
     [HttpGet]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<IActionResult> GetOrders(
         [FromQuery] PaginationParameters pagination,
         [FromQuery] OrderStatus? status = null,
@@ -60,6 +61,7 @@ public class OrdersController : ControllerBase
     /// Get order details by ID
     /// </summary>
     [HttpGet("{id}")]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<IActionResult> GetOrderById(int id)
     {
         try
@@ -82,6 +84,7 @@ public class OrdersController : ControllerBase
     /// Create new order (cart)
     /// </summary>
     [HttpPost]
+    [AllowAnonymous]
     public async Task<IActionResult> CreateOrder([FromBody] CreateOrderRequest request)
     {
         try
@@ -92,8 +95,11 @@ public class OrdersController : ControllerBase
                 return BadRequest(ApiResponse<object>.ValidationErrorResponse(errors));
             }
 
+            // Cập nhật: Lấy userId (có thể là null)
             var userId = GetCurrentUserId();
-            var order = await _orderService.CreateAsync(request, userId);
+            
+            // Cập nhật: Gọi logic service mới
+            var order = await _orderService.CreateAsync(request, userId); 
 
             return CreatedAtAction(nameof(GetOrderById), new { id = order.OrderId },
                 ApiResponse<OrderResponse>.SuccessResponse(order, "Order created successfully"));
@@ -114,6 +120,7 @@ public class OrdersController : ControllerBase
     /// Update order information
     /// </summary>
     [HttpPut("{id}")]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<IActionResult> UpdateOrder(int id, [FromBody] UpdateOrderRequest request)
     {
         try
@@ -148,6 +155,7 @@ public class OrdersController : ControllerBase
     /// Cancel order
     /// </summary>
     [HttpDelete("{id}")]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<IActionResult> CancelOrder(int id)
     {
         try
@@ -176,6 +184,7 @@ public class OrdersController : ControllerBase
     /// Add item to order
     /// </summary>
     [HttpPost("{id}/items")]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<IActionResult> AddOrderItem(int id, [FromBody] AddOrderItemRequest request)
     {
         try
@@ -205,6 +214,7 @@ public class OrdersController : ControllerBase
     /// Update order item quantity
     /// </summary>
     [HttpPut("{id}/items/{itemId}")]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<IActionResult> UpdateOrderItem(int id, int itemId, [FromBody] UpdateOrderItemRequest request)
     {
         try
@@ -236,6 +246,7 @@ public class OrdersController : ControllerBase
     /// Delete order item
     /// </summary>
     [HttpDelete("{id}/items/{itemId}")]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<IActionResult> DeleteOrderItem(int id, int itemId)
     {
         try
@@ -259,6 +270,7 @@ public class OrdersController : ControllerBase
     /// Apply promotion to order
     /// </summary>
     [HttpPost("{id}/promotion")]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<IActionResult> ApplyPromotion(int id, [FromBody] ApplyPromotionRequest request)
     {
         try
@@ -288,6 +300,7 @@ public class OrdersController : ControllerBase
     /// Remove promotion from order
     /// </summary>
     [HttpDelete("{id}/promotion")]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<IActionResult> RemovePromotion(int id)
     {
         try
@@ -311,6 +324,7 @@ public class OrdersController : ControllerBase
     /// Checkout order (process payment)
     /// </summary>
     [HttpPost("{id}/checkout")]
+    [Authorize(Policy = "AdminOrStaff")]
     public async Task<IActionResult> Checkout(int id, [FromBody] CheckoutRequest request)
     {   
       

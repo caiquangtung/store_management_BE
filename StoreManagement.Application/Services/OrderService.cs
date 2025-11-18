@@ -15,6 +15,7 @@ public class OrderService : IOrderService
     private readonly IInventoryRepository _inventoryRepository;
     private readonly IPromotionRepository _promotionRepository;
     private readonly IPaymentRepository _paymentRepository;
+    private readonly ICustomerRepository _customerRepository;
     private readonly IMapper _mapper;
     private readonly ILogger<OrderService> _logger;
 
@@ -70,6 +71,7 @@ public class OrderService : IOrderService
         IInventoryRepository inventoryRepository,
         IPromotionRepository promotionRepository,
         IPaymentRepository paymentRepository,
+        ICustomerRepository customerRepository,
         IMapper mapper,
         ILogger<OrderService> logger)
     {
@@ -78,6 +80,7 @@ public class OrderService : IOrderService
         _inventoryRepository = inventoryRepository;
         _promotionRepository = promotionRepository;
         _paymentRepository = paymentRepository;
+        _customerRepository = customerRepository;
         _mapper = mapper;
         _logger = logger;
     }
@@ -128,22 +131,151 @@ public class OrderService : IOrderService
         return (mappedItems, totalCount);
     }
 
-    public async Task<OrderResponse> CreateAsync(CreateOrderRequest request, int userId)
+    public async Task<OrderResponse> CreateAsync(CreateOrderRequest request, int? userId)
     {
+        //BƯỚC 0: VALIDATE ĐẦU VÀO
+        if (request.OrderDetails == null || !request.OrderDetails.Any())
+        {
+            throw new InvalidOperationException("Không thể tạo đơn hàng trống (Order must have items).");
+        }
+
+        //BƯỚC 1: XỬ LÝ KHÁCH HÀNG (VÃNG LAI HOẶC CŨ)
+        int? customerId = null;
+        if (request.CustomerId.HasValue && request.CustomerId > 0)
+        {
+            customerId = request.CustomerId;
+        }
+        else if (!string.IsNullOrWhiteSpace(request.CustomerPhone))
+        {
+            // Thử tìm khách hàng bằng SĐT
+            var existingCustomer = await _customerRepository.GetByPhoneAsync(request.CustomerPhone);
+            if (existingCustomer != null)
+            {
+                customerId = existingCustomer.CustomerId;
+            }
+            else
+            {
+                // Nếu không tìm thấy, tạo khách hàng mới
+                var newCustomer = new Customer
+                {
+                    Name = string.IsNullOrWhiteSpace(request.CustomerName) ? "Khách vãng lai" : request.CustomerName,
+                    Phone = request.CustomerPhone,
+                    Email = request.CustomerEmail,
+                    Address = request.CustomerAddress,
+                    Status = EntityStatus.Active,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _customerRepository.AddAsync(newCustomer);
+                // Lưu ngay để lấy ID. EF Core sẽ gói nó vào transaction chung nếu SaveChangesAsync() được gọi ở cuối.
+            }
+        }
+        // Nếu không có CustomerId và không có SĐT, customerId sẽ là null
+
+        //BƯỚC 2: KIỂM TRA TỒN KHO (PRE-CHECK)
+        foreach (var item in request.OrderDetails)
+        {
+            var inventory = await _inventoryRepository.GetByProductIdAsync(item.ProductId);
+            if (inventory == null || inventory.Quantity < item.Quantity)
+            {
+                _logger.LogWarning("Sản phẩm (ID: {ProductId}) không đủ tồn kho (Cần {Quantity}, có {Available})", item.ProductId, item.Quantity, inventory?.Quantity ?? 0);
+                throw new InvalidOperationException($"Sản phẩm (ID: {item.ProductId}) không đủ tồn kho.");
+            }
+        }
+
+        //BƯỚC 3: TẠO CÁC ENTITY TRONG BỘ NHỚ
+        // 3.1. Tạo Order (Đơn hàng)
         var order = new Order
         {
-            CustomerId = request.CustomerId,
-            UserId = userId,
-            Status = OrderStatus.Pending,
+            CustomerId = customerId,
+            UserId = userId, // Có thể là null nếu là khách vãng lai
+            PromoId = request.PromoId,
             OrderDate = DateTime.UtcNow,
-            TotalAmount = 0,
-            DiscountAmount = 0
+            Status = OrderStatus.Paid, // Đặt hàng thành công luôn
+            DiscountAmount = 0,
+            TotalAmount = 0
         };
 
+        // 3.2. Tạo OrderItems và Tính Tổng tiền
+        decimal calculatedTotalAmount = 0;
+        foreach (var itemRequest in request.OrderDetails)
+        {
+            var product = await _productRepository.GetByIdAsync(itemRequest.ProductId);
+            if (product == null) throw new InvalidOperationException($"Sản phẩm (ID: {itemRequest.ProductId}) không tồn tại.");
+
+            var price = product.Price; // Chốt giá tại thời điểm mua
+            var subtotal = price * itemRequest.Quantity;
+            calculatedTotalAmount += subtotal;
+
+            order.OrderItems.Add(new OrderItem
+            {
+                ProductId = itemRequest.ProductId,
+                Quantity = itemRequest.Quantity,
+                Price = price,
+                Subtotal = subtotal
+            });
+        }
+        order.TotalAmount = calculatedTotalAmount;
+
+        // 3.3. Áp dụng Khuyến mãi (nếu có)
+        if (request.PromoId.HasValue && request.PromoId > 0)
+        {
+            var promotion = await _promotionRepository.GetByIdAsync(request.PromoId.Value);
+            if (promotion != null)
+            {
+                // (Thêm logic kiểm tra khuyến mãi hợp lệ: ngày, số lượng,...)
+                order.DiscountAmount = await CalculateDiscountAsync(promotion, order.TotalAmount.Value);
+                promotion.UsedCount++;
+                await _promotionRepository.UpdateAsync(promotion);
+            }
+        }
+
+        // 3.4. Kiểm tra số tiền thanh toán
+        decimal finalAmount = order.TotalAmount.Value - order.DiscountAmount;
+        if (finalAmount < 0) finalAmount = 0;
+
+        if (request.AmountPaid != finalAmount)
+        {
+            throw new InvalidOperationException($"Số tiền thanh toán ({request.AmountPaid}) không khớp với tổng đơn hàng ({finalAmount}).");
+        }
+
+        // 3.5. Tạo Payment (Thanh toán)
+        if (!Enum.TryParse<PaymentMethod>(request.PaymentMethod, true, out var paymentMethod))
+        {
+            throw new InvalidOperationException($"Phương thức thanh toán '{request.PaymentMethod}' không hợp lệ.");
+        }
+        order.Payments.Add(new Payment
+        {
+            Amount = finalAmount,
+            PaymentMethod = paymentMethod,
+            PaymentDate = DateTime.UtcNow
+        });
+
+        //BƯỚC 4: CẬP NHẬT KHO (TRỪ KHO)
+        foreach (var orderItem in order.OrderItems)
+        {
+            var inventory = await _inventoryRepository.GetByProductIdAsync(orderItem.ProductId.Value);
+            // Kiểm tra lại (phòng trường hợp 2 người mua cùng lúc)
+            if (inventory == null || inventory.Quantity < orderItem.Quantity)
+            {
+                 throw new InvalidOperationException($"Sản phẩm (ID: {orderItem.ProductId}) đã bị bán hết trong lúc bạn đặt hàng.");
+            }
+            inventory.Quantity -= orderItem.Quantity;
+            await _inventoryRepository.UpdateAsync(inventory);
+        }
+
+        //BƯỚC 5: LƯU GIAO DỊCH (TRANSACTION)
         await _orderRepository.AddAsync(order);
+        
+        // SaveChangesAsync sẽ thực thi tất cả các thay đổi trong 1 transaction:
+        // 1. Add(newCustomer) (nếu có)
+        // 2. Add(order) (bao gồm OrderItems và Payment)
+        // 3. Update(promotion) (nếu có)
+        // 4. Update(inventory) (cho mỗi sản phẩm)
         await _orderRepository.SaveChangesAsync();
 
-        return _mapper.Map<OrderResponse>(order);
+        //BƯỚC 6: TRẢ VỀ KẾT QUẢ
+        var createdOrder = await _orderRepository.GetByIdWithDetailsAsync(order.OrderId);
+        return _mapper.Map<OrderResponse>(createdOrder!);
     }
 
     // ⭐ ĐÃ SỬA: Đảm bảo tải đầy đủ chi tiết và gọi RecalculateTotalAsync

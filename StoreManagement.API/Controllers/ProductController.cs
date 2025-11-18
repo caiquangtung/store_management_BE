@@ -10,7 +10,7 @@ namespace StoreManagement.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Policy = "AdminOrStaff")]
+// [Authorize(Policy = "AdminOrStaff")]
 public class ProductsController : ControllerBase
 {
     private readonly IProductService _productService;
@@ -23,6 +23,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> GetAllProducts(
         [FromQuery] PaginationParameters pagination,
         [FromQuery] EntityStatus? status = null,
@@ -47,6 +48,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetProductById(int id)
     {
         try

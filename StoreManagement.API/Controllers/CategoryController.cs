@@ -9,7 +9,7 @@ namespace StoreManagement.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Policy = "AdminOrStaff")]
+// [Authorize(Policy = "AdminOrStaff")]
 public class CategoriesController : ControllerBase
 {
     private readonly ICategoryService _categoryService;
@@ -22,6 +22,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> GetAllCategories(
         [FromQuery] PaginationParameters pagination,
         [FromQuery] EntityStatus? status = null,
@@ -45,6 +46,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetCategoryById(int id)
     {
         try

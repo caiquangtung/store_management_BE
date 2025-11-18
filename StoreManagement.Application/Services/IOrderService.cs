@@ -10,7 +10,7 @@ public interface IOrderService
     Task<(IEnumerable<OrderResponse> Items, int TotalCount)> GetAllPagedAsync(
         int pageNumber, int pageSize, OrderStatus? status = null, int? userId = null, int? customerId = null,
         string? sortBy = null, bool sortDesc = false);
-    Task<OrderResponse> CreateAsync(CreateOrderRequest request, int userId);
+    Task<OrderResponse> CreateAsync(CreateOrderRequest request, int? userId);
     Task<OrderResponse?> UpdateAsync(int orderId, UpdateOrderRequest request);
     Task<bool> CancelAsync(int orderId);
 
@@ -24,6 +24,6 @@ public interface IOrderService
     Task<OrderResponse> RemovePromotionAsync(int orderId);
 
     // Checkout & Payment
-    Task<OrderResponse> CheckoutAsync(int orderId, CheckoutRequest   request);
+    Task<OrderResponse> CheckoutAsync(int orderId, CheckoutRequest request);
     
 }
