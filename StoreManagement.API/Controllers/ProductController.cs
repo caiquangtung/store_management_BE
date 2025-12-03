@@ -29,13 +29,20 @@ public class ProductsController : ControllerBase
         [FromQuery] EntityStatus? status = null,
         [FromQuery] string? searchTerm = null,
         [FromQuery] string? sortBy = null,
-        [FromQuery] bool sortDesc = false)
+        [FromQuery] bool sortDesc = false,
+        [FromQuery] int? categoryId = null)
     {
         try
         {
-            // Get paged products from service with database-level pagination and search
+            // Get paged products from service with database-level pagination, search and optional category filter
             var (products, totalCount) = await _productService.GetAllPagedAsync(
-                pagination.PageNumber, pagination.PageSize, status, searchTerm, sortBy, sortDesc);
+                pagination.PageNumber,
+                pagination.PageSize,
+                status,
+                searchTerm,
+                sortBy,
+                sortDesc,
+                categoryId);
 
             var pagedResult = PagedResult<ProductResponse>.Create(products, totalCount, pagination.PageNumber, pagination.PageSize);
             return Ok(ApiResponse<PagedResult<ProductResponse>>.SuccessResponse(pagedResult, "Products retrieved successfully"));

@@ -33,11 +33,19 @@ public class ProductService : IProductService
         return _mapper.Map<IEnumerable<ProductResponse>>(products);
     }
 
-    public async Task<(IEnumerable<ProductResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize,EntityStatus? status = null, string? searchTerm = null, string? sortBy = null, bool sortDesc = false)
+    public async Task<(IEnumerable<ProductResponse> Items, int TotalCount)> GetAllPagedAsync(
+        int pageNumber,
+        int pageSize,
+        EntityStatus? status = null,
+        string? searchTerm = null,
+        string? sortBy = null,
+        bool sortDesc = false,
+        int? categoryId = null)
     {
         // Build filter expression
         Expression<Func<Product, bool>> filter = p =>
             (!status.HasValue || p.Status == status.Value) &&
+            (!categoryId.HasValue || p.CategoryId == categoryId.Value) &&
             (string.IsNullOrEmpty(searchTerm) ||
                 p.ProductName.Contains(searchTerm) ||
                 (p.Barcode != null && p.Barcode.Contains(searchTerm)));

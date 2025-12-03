@@ -6,7 +6,14 @@ public interface IProductService
 {
     Task<ProductResponse?> GetByIdAsync(int id);
     Task<IEnumerable<ProductResponse>> GetAllAsync();
-    Task<(IEnumerable<ProductResponse> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize,EntityStatus? status = null, string? searchTerm = null, string? sortBy = null, bool sortDesc = false);
+    Task<(IEnumerable<ProductResponse> Items, int TotalCount)> GetAllPagedAsync(
+        int pageNumber,
+        int pageSize,
+        EntityStatus? status = null,
+        string? searchTerm = null,
+        string? sortBy = null,
+        bool sortDesc = false,
+        int? categoryId = null);
     Task<ProductResponse?> CreateAsync(CreateProductRequest request);
     Task<ProductResponse?> UpdateAsync(int id, UpdateProductRequest request);
     Task<bool> DeleteAsync(int id);
