@@ -1,0 +1,46 @@
+### Quản lý Cửa hàng - Kiểm tra API Đơn hàng của Khách
+### BASE URL
+@baseUrl = http://localhost:5000
+
+#####################################################################
+### QUY TRÌNH ĐƠN HÀNG CỦA KHÁCH
+##################################################################
+
+### Bước 1: Tạo Đơn hàng Mới (Khách vãng lai)
+# @name createOrder
+POST {{baseUrl}}/api/orders
+Content-Type: application/json
+
+{
+"customerName": "Người dùng Khách",
+"customerPhone": "0123456789"
+}
+
+### Bước 2: Thêm sản phẩm vào giỏ hàng
+# @name addItem
+POST {{baseUrl}}/api/orders/{{createOrder.response.body.data.orderId}}/items
+Content-Type: application/json
+
+{
+"productId": 1,
+"quantity": 2
+}
+
+### Bước 3: Áp dụng khuyến mãi
+POST {{baseUrl}}/api/orders/{{createOrder.response.body.data.orderId}}/promotion
+Content-Type: application/json
+
+{
+"promoCode": "SAVE10"
+}
+
+### Bước 4: Thanh toán
+POST {{baseUrl}}/api/orders/{{createOrder.response.body.data.orderId}}/checkout
+Content-Type: application/json
+
+{
+"paymentMethod": "Tiền mặt",
+"Số tiền": {{createOrder.response.body.data.finalAmount}},
+"Tên khách hàng": "Người dùng khách",
+"Số điện thoại khách hàng": "0123456789"
+}

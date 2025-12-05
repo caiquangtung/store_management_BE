@@ -183,7 +183,7 @@ public class PromotionController : ControllerBase
     /// Validate promotion
     /// </summary>
     [HttpPost("validate")]
-    [Authorize(Policy = "AdminOrStaff")]
+    [AllowAnonymous]
     public async Task<ActionResult<ApiResponse<PromotionValidationResponse>>> ValidatePromotion([FromBody] ValidatePromotionRequest request)
     {
         try
@@ -210,7 +210,7 @@ public class PromotionController : ControllerBase
     /// Calculate discount amount
     /// </summary>
     [HttpPost("calculate-discount")]
-    [Authorize(Policy = "AdminOrStaff")]
+    [AllowAnonymous]
     public async Task<ActionResult<ApiResponse<decimal>>> CalculateDiscount([FromBody] ValidatePromotionRequest request)
     {
         try
