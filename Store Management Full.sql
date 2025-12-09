@@ -10,7 +10,7 @@ CREATE TABLE users (
     username VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     full_name VARCHAR(100),
-    role ENUM('admin','staff') DEFAULT 'staff',
+    role ENUM('admin','staff', 'customer') DEFAULT 'customer',
     status ENUM('active', 'inactive', 'deleted') NOT NULL DEFAULT 'active', -- THÊM CỘT NÀY
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -166,6 +166,7 @@ INSERT INTO users (username, password, full_name, role, status) VALUES
 ('admin', '$2a$11$4ySutzLtb1UjIXpa8kRqsenXGsN0JvFv5ahQGu0j5ryPzZvZVHC2G', 'Quản trị viên', 'admin', 'active'),
 ('staff01', '$2a$11$4ySutzLtb1UjIXpa8kRqsenXGsN0JvFv5ahQGu0j5ryPzZvZVHC2G', 'Nguyễn Văn A', 'staff', 'active'),
 ('staff02', '$2a$11$4ySutzLtb1UjIXpa8kRqsenXGsN0JvFv5ahQGu0j5ryPzZvZVHC2G', 'Lê Thị B', 'staff', 'inactive');
+('customer1', '$2a$11$4ySutzLtb1UjIXpa8kRqsenXGsN0JvFv5ahQGu0j5ryPzZvZVHC2G', 'Lê Thị C', 'customer', 'active');
 
 -- DATA CUSTOMERS
 INSERT INTO customers (name,phone,email,address) VALUES
