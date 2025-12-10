@@ -11,17 +11,20 @@ public class AuthService : IAuthService
     private readonly IPasswordService _passwordService;
     private readonly IJwtService _jwtService;
     private readonly IRefreshTokenStore _refreshTokenStore;
+    private readonly ICustomerRepository _customerRepository;
 
     public AuthService(
         IUserRepository userRepository,
         IPasswordService passwordService,
         IJwtService jwtService,
-        IRefreshTokenStore refreshTokenStore)
+        IRefreshTokenStore refreshTokenStore,
+        ICustomerRepository customerRepository)
     {
         _userRepository = userRepository;
         _passwordService = passwordService;
         _jwtService = jwtService;
         _refreshTokenStore = refreshTokenStore;
+        _customerRepository = customerRepository;
     }
 
     public async Task<LoginResponse?> LoginAsync(LoginRequest request)
@@ -55,6 +58,16 @@ public class AuthService : IAuthService
         var refreshToken = await _refreshTokenStore.IssueTokenAsync(user.UserId, refreshLifetime);
         var refreshExpiresAt = DateTime.UtcNow.Add(refreshLifetime);
 
+        int? customerId = null;
+        if (user.Role == UserRole.Customer)
+        {
+             var customer = await _customerRepository.GetByUserIdAsync(user.UserId);
+             if (customer != null)
+             {
+                 customerId = customer.CustomerId;
+             }
+        }
+
         return new LoginResponse
         {
             Token = token,
@@ -66,7 +79,8 @@ public class AuthService : IAuthService
                 UserId = user.UserId,
                 Username = user.Username,
                 FullName = user.FullName,
-                Role = user.Role.ToString()
+                Role = user.Role.ToString(),
+                CustomerId = customerId
             }
         };
     }

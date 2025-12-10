@@ -85,6 +85,6 @@ public class JwtService : IJwtService
     /// <returns>True if valid, false otherwise</returns>
     private static bool IsValidRole(string role)
     {
-        return role == UserRole.Admin.ToString() || role == UserRole.Staff.ToString();
+        return role == UserRole.Admin.ToString() || role == UserRole.Staff.ToString() || role == UserRole.Customer.ToString();
     }
 }

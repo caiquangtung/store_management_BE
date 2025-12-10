@@ -245,6 +245,7 @@ public class StoreDbContext : DbContext
             entity.Property(e => e.Phone).HasColumnName("phone");
             entity.Property(e => e.Email).HasColumnName("email");
             entity.Property(e => e.Address).HasColumnName("address");
+            entity.Property(e => e.UserId).HasColumnName("user_id"); // Added mapping
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.Status)
                 .HasColumnName("status")

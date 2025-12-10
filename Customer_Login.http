@@ -1,0 +1,26 @@
+@host = http://localhost:5000
+
+### 1. Login as Customer (customer1)
+# Expected result: 
+# - Returns 200 OK
+# - Returns JWT Token
+# - Returns "customerId": 1 in the "user" object
+POST {{host}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "username": "customer1",
+  "password": "password123"
+}
+
+### Variable Response
+@token = {{login.response.body.data.token}}
+@customerId = {{login.response.body.data.user.customerId}}
+
+### 2. Get Customer Details (LoadInfoCustomer)
+# Expected result:
+# - Returns 200 OK
+# - Returns Customer details (Name, Phone, etc.)
+# - NOTE: This endpoint requires "AllRoles" policy (Updated in BE)
+GET {{host}}/api/Customer/{{customerId}}
+Authorization: Bearer {{token}}

@@ -8,4 +8,5 @@ public interface ICustomerRepository : IRepository<Customer>
     Task<bool> EmailExistsAsync(string email);
     Task<Customer?> GetByPhoneAsync(string phone);
     Task<bool> PhoneExistsAsync(string phone);
+    Task<Customer?> GetByUserIdAsync(int userId);
 }

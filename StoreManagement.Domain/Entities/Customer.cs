@@ -9,6 +9,7 @@ public class Customer
     public string? Address { get; set; }
     public DateTime CreatedAt { get; set; }
     public EntityStatus Status { get; set; } = EntityStatus.Active;
+    public int? UserId { get; set; }
     // Navigation properties
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
 }

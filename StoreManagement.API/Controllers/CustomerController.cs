@@ -58,7 +58,7 @@ public class CustomerController : ControllerBase
     /// Get customer by ID
     /// </summary>
     [HttpGet("{id}")]
-    [Authorize(Policy = "AdminOrStaff")]
+    [Authorize(Policy = "AllRoles")]
     public async Task<ActionResult<ApiResponse<CustomerResponse>>> GetCustomer(int id)
     {
         try

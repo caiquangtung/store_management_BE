@@ -128,7 +128,7 @@ builder.Services.AddAuthorization(options =>
         policy.Requirements.Add(new StoreManagement.API.Authorization.UserRoleRequirement(UserRole.Admin, UserRole.Staff)));
 
     options.AddPolicy("AllRoles", policy =>
-        policy.Requirements.Add(new StoreManagement.API.Authorization.UserRoleRequirement(UserRole.Admin, UserRole.Staff)));
+        policy.Requirements.Add(new StoreManagement.API.Authorization.UserRoleRequirement(UserRole.Admin, UserRole.Staff, UserRole.Customer)));
 });
 builder.Services.AddCors(options =>
 {

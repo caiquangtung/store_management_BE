@@ -47,6 +47,6 @@ public class UserRoleHandler : AuthorizationHandler<UserRoleRequirement>
     /// <returns>True if valid, false otherwise</returns>
     private static bool IsValidUserRole(UserRole role)
     {
-        return role == UserRole.Admin || role == UserRole.Staff;
+        return role == UserRole.Admin || role == UserRole.Staff || role == UserRole.Customer;
     }
 }

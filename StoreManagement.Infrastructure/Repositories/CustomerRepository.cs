@@ -34,4 +34,10 @@ public class CustomerRepository : BaseRepository<Customer>, ICustomerRepository
         return await _context.Customers
             .AnyAsync(c => c.Phone == phone);
     }
+
+    public async Task<Customer?> GetByUserIdAsync(int userId)
+    {
+        return await _context.Customers
+            .FirstOrDefaultAsync(c => c.UserId == userId);
+    }
 }

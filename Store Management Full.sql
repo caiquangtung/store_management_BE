@@ -23,7 +23,10 @@ CREATE TABLE customers (
     email VARCHAR(100),
     address TEXT,
     status ENUM('active', 'inactive', 'deleted') DEFAULT 'active', -- <-- CẬP NHẬT
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    user_id INT, -- THÊM CỘT NÀY
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_customers_user FOREIGN KEY (user_id) REFERENCES users(user_id)
+
 );
 
 -- Bảng loại sản phẩm
@@ -165,12 +168,12 @@ CREATE TABLE inventory_adjustments (
 INSERT INTO users (username, password, full_name, role, status) VALUES
 ('admin', '$2a$11$4ySutzLtb1UjIXpa8kRqsenXGsN0JvFv5ahQGu0j5ryPzZvZVHC2G', 'Quản trị viên', 'admin', 'active'),
 ('staff01', '$2a$11$4ySutzLtb1UjIXpa8kRqsenXGsN0JvFv5ahQGu0j5ryPzZvZVHC2G', 'Nguyễn Văn A', 'staff', 'active'),
-('staff02', '$2a$11$4ySutzLtb1UjIXpa8kRqsenXGsN0JvFv5ahQGu0j5ryPzZvZVHC2G', 'Lê Thị B', 'staff', 'inactive');
+('staff02', '$2a$11$4ySutzLtb1UjIXpa8kRqsenXGsN0JvFv5ahQGu0j5ryPzZvZVHC2G', 'Lê Thị B', 'staff', 'inactive'),
 ('customer1', '$2a$11$4ySutzLtb1UjIXpa8kRqsenXGsN0JvFv5ahQGu0j5ryPzZvZVHC2G', 'Lê Thị C', 'customer', 'active');
 
 -- DATA CUSTOMERS
-INSERT INTO customers (name,phone,email,address) VALUES
-('Khách hàng 1', '0909000001', 'kh1@mail.com', 'Địa chỉ 1'),('Khách hàng 2', '0909000002', 'kh2@mail.com', 'Địa chỉ 2'),('Khách hàng 3', '0909000003', 'kh3@mail.com', 'Địa chỉ 3'),('Khách hàng 4', '0909000004', 'kh4@mail.com', 'Địa chỉ 4'),('Khách hàng 5', '0909000005', 'kh5@mail.com', 'Địa chỉ 5'),('Khách hàng 6', '0909000006', 'kh6@mail.com', 'Địa chỉ 6'),('Khách hàng 7', '0909000007', 'kh7@mail.com', 'Địa chỉ 7'),('Khách hàng 8', '0909000008', 'kh8@mail.com', 'Địa chỉ 8'),('Khách hàng 9', '0909000009', 'kh9@mail.com', 'Địa chỉ 9'),('Khách hàng 10', '0909000010', 'kh10@mail.com', 'Địa chỉ 10'),('Khách hàng 11', '0909000011', 'kh11@mail.com', 'Địa chỉ 11'),('Khách hàng 12', '0909000012', 'kh12@mail.com', 'Địa chỉ 12'),('Khách hàng 13', '0909000013', 'kh13@mail.com', 'Địa chỉ 13'),('Khách hàng 14', '0909000014', 'kh14@mail.com', 'Địa chỉ 14'),('Khách hàng 15', '0909000015', 'kh15@mail.com', 'Địa chỉ 15'),('Khách hàng 16', '0909000016', 'kh16@mail.com', 'Địa chỉ 16'),('Khách hàng 17', '0909000017', 'kh17@mail.com', 'Địa chỉ 17'),('Khách hàng 18', '0909000018', 'kh18@mail.com', 'Địa chỉ 18'),('Khách hàng 19', '0909000019', 'kh19@mail.com', 'Địa chỉ 19'),('Khách hàng 20', '0909000020', 'kh20@mail.com', 'Địa chỉ 20');
+INSERT INTO customers (name,phone,email,address,status,user_id) VALUES
+('Khách hàng 1', '0909000001', 'kh1@mail.com', 'Địa chỉ 1','active', 4),('Khách hàng 2', '0909000002', 'kh2@mail.com', 'Địa chỉ 2','active', NULL),('Khách hàng 3', '0909000003', 'kh3@mail.com', 'Địa chỉ 3','active', NULL),('Khách hàng 4', '0909000004', 'kh4@mail.com', 'Địa chỉ 4','active', NULL),('Khách hàng 5', '0909000005', 'kh5@mail.com', 'Địa chỉ 5','active', NULL),('Khách hàng 6', '0909000006', 'kh6@mail.com', 'Địa chỉ 6','active', NULL),('Khách hàng 7', '0909000007', 'kh7@mail.com', 'Địa chỉ 7','active', NULL),('Khách hàng 8', '0909000008', 'kh8@mail.com', 'Địa chỉ 8','active', NULL),('Khách hàng 9', '0909000009', 'kh9@mail.com', 'Địa chỉ 9','active', NULL),('Khách hàng 10', '0909000010', 'kh10@mail.com', 'Địa chỉ 10','active', NULL),('Khách hàng 11', '0909000011', 'kh11@mail.com', 'Địa chỉ 11','active', NULL),('Khách hàng 12', '0909000012', 'kh12@mail.com', 'Địa chỉ 12','active', NULL),('Khách hàng 13', '0909000013', 'kh13@mail.com', 'Địa chỉ 13','active', NULL),('Khách hàng 14', '0909000014', 'kh14@mail.com', 'Địa chỉ 14','active', NULL),('Khách hàng 15', '0909000015', 'kh15@mail.com', 'Địa chỉ 15','active', NULL),('Khách hàng 16', '0909000016', 'kh16@mail.com', 'Địa chỉ 16','active', NULL),('Khách hàng 17', '0909000017', 'kh17@mail.com', 'Địa chỉ 17','active', NULL),('Khách hàng 18', '0909000018', 'kh18@mail.com', 'Địa chỉ 18','active', NULL),('Khách hàng 19', '0909000019', 'kh19@mail.com', 'Địa chỉ 19','active', NULL),('Khách hàng 20', '0909000020', 'kh20@mail.com', 'Địa chỉ 20','active', NULL);
 
 -- DATA CATEGORIES
 INSERT INTO categories (category_name) VALUES
