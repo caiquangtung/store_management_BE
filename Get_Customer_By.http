@@ -1,0 +1,25 @@
+@host = http://localhost:5000
+
+### 1. Login (Để lấy Token và UserId)
+# API này dùng để đăng nhập. 
+# Response sẽ trả về Token (dùng cho Authorization header) và User Object chứa userId.
+# @name login
+POST {{host}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "username": "customer1",
+  "password": "password123"
+}
+
+### Variables (Lấy tự động từ response trên)
+@token = {{login.response.body.data.token}}
+@userId = {{login.response.body.data.user.userId}}
+
+### 2. Get Customer by User ID (API Mới)
+# API này dùng để lấy CustomerId từ UserId.
+# Input: userId (lấy từ login hoặc context)
+# Output: Customer Object chứa customerId.
+# Authorization: Bearer {token}
+GET {{host}}/api/Customer/by-user/{{userId}}
+Authorization: Bearer {{token}}

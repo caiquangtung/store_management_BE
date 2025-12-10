@@ -13,6 +13,7 @@ public interface ICustomerService
     Task<bool> EmailExistsAsync(string email);
     Task<CustomerResponse?> GetCustomerByPhoneAsync(string phone);
     Task<bool> PhoneExistsAsync(string phone);
+    Task<CustomerResponse?> GetCustomerByUserIdAsync(int userId);
     Task<bool> CustomerExistsAsync(int customerId);
     Task<CustomerResponse> CreateCustomerAsync(CreateCustomerRequest request);
     Task<CustomerResponse?> UpdateCustomerAsync(int id, UpdateCustomerRequest request);

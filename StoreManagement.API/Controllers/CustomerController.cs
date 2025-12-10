@@ -217,6 +217,42 @@ public class CustomerController : ControllerBase
     }
 
     /// <summary>
+    /// Get customer by User ID
+    /// </summary>
+    [HttpGet("by-user/{userId}")]
+    [Authorize(Policy = "AllRoles")]
+    public async Task<ActionResult<ApiResponse<CustomerResponse>>> GetCustomerByUserId(int userId)
+    {
+        try
+        {
+            var customer = await _customerService.GetCustomerByUserIdAsync(userId);
+            if (customer == null)
+            {
+                return NotFound(new ApiResponse<CustomerResponse>
+                {
+                    Success = false,
+                    Message = "Customer not found for this user"
+                });
+            }
+
+            return Ok(new ApiResponse<CustomerResponse>
+            {
+                Success = true,
+                Data = customer,
+                Message = "Customer retrieved successfully"
+            });
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, new ApiResponse<CustomerResponse>
+            {
+                Success = false,
+                Message = "An error occurred while retrieving customer"
+            });
+        }
+    }
+
+    /// <summary>
     /// Create a new customer
     /// </summary>
     [HttpPost]
